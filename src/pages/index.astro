@@ -8,10 +8,10 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
 ---
 
 <Layout title="EcoGuardianes v2.0">
-    <main id="app-bg" class="h-full w-full bg-dynamic relative flex items-center justify-center flex-col overflow-hidden" style="background-image: url('https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=1920&auto=format&fit=crop');">
+    <main id="app-bg" class="h-full w-full bg-dynamic relative flex items-center justify-center flex-col overflow-hidden" style="background-image: url('/images/fondo.png');">
         
-        <!-- Dark overlay to ensure text/cards are always readable -->
-        <div class="absolute inset-0 bg-slate-900/40 pointer-events-none z-0"></div>
+        <!-- Dark overlay to ensure text/cards are always readable with high contrast -->
+        <div class="absolute inset-0 bg-gradient-to-b from-slate-950/65 via-slate-900/45 to-slate-950/75 pointer-events-none z-0 backdrop-blur-[1px]"></div>
 
         <ScreenStart />
         <ScreenUpload />
@@ -151,9 +151,9 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
             
             q.options.forEach((opt, idx) => {
                 const btn = document.createElement('button');
-                btn.className = "option-btn w-full bg-white/90 p-5 rounded-2xl border-2 border-slate-300 text-left font-bold text-lg md:text-xl text-slate-700 shadow-sm active:bg-slate-100 flex justify-between items-center";
+                btn.className = "option-btn w-full bg-white/95 p-3.5 sm:p-4.5 rounded-2xl border-2 border-slate-200 text-left font-bold text-base sm:text-lg md:text-xl text-slate-800 shadow-sm active:bg-slate-100 flex justify-between items-center hover:border-sky-400 hover:bg-sky-50/40 transition-all";
                 btn.innerHTML = `
-                    <span>${opt}</span>
+                    <span class="pr-2 leading-tight">${opt}</span>
                     <div class="w-6 h-6 rounded-full border-2 border-slate-300 flex items-center justify-center shrink-0 indicator-circle"></div>
                 `;
                 btn.onclick = () => handleAnswer(idx, btn);
@@ -173,7 +173,7 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
 
             const banner = document.getElementById('feedback-banner')!;
             const bgBanner = document.getElementById('feedback-bg')!;
-            const iconEl = document.getElementById('feedback-icon')!;
+            const mascotEl = document.getElementById('feedback-mascot') as HTMLImageElement;
             const titleEl = document.getElementById('feedback-title')!;
             const descEl = document.getElementById('feedback-desc')!;
 
@@ -186,10 +186,9 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
                 circle.innerHTML = '<i class="fa-solid fa-check"></i>';
 
                 bgBanner.className = "w-full min-h-[140px] bg-emerald-500 rounded-t-[2rem] shadow-[0_-10px_20px_rgba(0,0,0,0.15)] p-6 flex flex-col md:flex-row items-center justify-between gap-4";
-                iconEl.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i>';
-                iconEl.className = "text-3xl bg-white rounded-full w-14 h-14 flex items-center justify-center shrink-0 shadow-sm";
-                titleEl.innerText = "¡Muy bien! Sigue así";
-                descEl.innerText = "";
+                mascotEl.src = "/images/FELICITA.png";
+                titleEl.innerText = "¡Muy bien! 🎉";
+                descEl.innerText = q.explanation;
             } else {
                 selectedBtn.classList.remove('bg-white/90', 'border-slate-300', 'text-slate-700');
                 selectedBtn.classList.add('bg-red-100', 'border-red-500', 'text-red-800', 'border-4', 'animate-shake');
@@ -207,10 +206,9 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
                 }, 300);
 
                 bgBanner.className = "w-full min-h-[140px] bg-red-500 rounded-t-[2rem] shadow-[0_-10px_20px_rgba(0,0,0,0.15)] p-6 flex flex-col md:flex-row items-center justify-between gap-4";
-                iconEl.innerHTML = '<i class="fa-solid fa-xmark text-red-500"></i>';
-                iconEl.className = "text-3xl bg-white rounded-full w-14 h-14 flex items-center justify-center shrink-0 shadow-sm";
-                titleEl.innerText = "😔 Lástima, sigue aprendiendo.";
-                descEl.innerHTML = `La correcta era: <strong>${q.options[q.correct]}</strong>`;
+                mascotEl.src = "/images/explica.png";
+                titleEl.innerText = "😔 Sigue aprendiendo";
+                descEl.innerHTML = `${q.explanation}`;
             }
 
             banner.classList.remove('translate-y-full');
@@ -219,7 +217,7 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
             
             state.timeoutId = setTimeout(() => {
                 advanceGame();
-            }, 2500);
+            }, 3500);
         }
 
         function advanceGame() {
@@ -246,31 +244,31 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
             
             document.getElementById('result-score')!.innerText = `${state.score}/${QUESTIONS.length}`;
 
-            const iconEl = document.getElementById('result-icon')!;
+            const mascotEl = document.getElementById('result-mascot') as HTMLImageElement;
             const titleEl = document.getElementById('result-title')!;
             const msgEl = document.getElementById('result-msg')!;
             const resultBox = document.getElementById('result-score')!;
 
             if (state.score === QUESTIONS.length) {
-                iconEl.innerText = "🏆";
-                titleEl.innerText = "ECO HÉROE";
-                titleEl.className = "text-4xl md:text-5xl font-black mb-1 text-emerald-600";
+                mascotEl.src = "/images/celebra.png";
+                titleEl.innerText = "¡ECO HÉROE! 🏆";
+                titleEl.className = "text-3xl md:text-4xl font-black mb-1 text-emerald-600";
                 resultBox.className = "text-5xl font-black text-emerald-500";
-                msgEl.innerText = "¡Felicidades! Has completado el desafío ambiental con puntuación perfecta.";
+                msgEl.innerText = "¡Felicidades, Eco-Explorador! Puntuación perfecta. ¡Lo hiciste genial!";
                 fireConfetti();
             } else if (state.score >= QUESTIONS.length - 1) {
-                iconEl.innerText = "🌱";
-                titleEl.innerText = "ECO APRENDIZ";
-                titleEl.className = "text-4xl md:text-5xl font-black mb-1 text-blue-600";
+                mascotEl.src = "/images/mascot-celebra.jpg";
+                titleEl.innerText = "¡MUY BIEN, ECO-EXPLORADOR! 🏅";
+                titleEl.className = "text-3xl md:text-4xl font-black mb-1 text-blue-600";
                 resultBox.className = "text-5xl font-black text-blue-500";
-                msgEl.innerText = "Muy buen trabajo. Demostraste sólidos conocimientos ambientales.";
+                msgEl.innerText = "¡Casi perfecto! Demostraste sólidos conocimientos sobre el cuidado del río Huallaga.";
                 fireConfetti(); 
             } else {
-                iconEl.innerText = "🌎";
+                mascotEl.src = "/images/saluda.png";
                 titleEl.innerText = "SIGUE APRENDIENDO";
                 titleEl.className = "text-3xl md:text-4xl font-black mb-1 text-slate-700";
                 resultBox.className = "text-5xl font-black text-slate-500";
-                msgEl.innerText = "Cada intento ayuda a conocer más sobre el cuidado del planeta. ¡Repasa e inténtalo otra vez!";
+                msgEl.innerText = "Cada intento ayuda a conocer más sobre el cuidado de nuestro río Huallaga. ¡Repasa e inténtalo otra vez!";
             }
         }
 

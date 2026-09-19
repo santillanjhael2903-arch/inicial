@@ -52,3 +52,11 @@ body {
 /* Option selection visual fixes */
 .option-btn { transition: all 0.2s ease; }
 .option-btn:disabled { cursor: not-allowed; }
+
+@keyframes bounceSubtle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+.animate-bounce-subtle {
+    animation: bounceSubtle 2.5s ease-in-out infinite;
+}
