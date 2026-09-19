@@ -266,6 +266,13 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
             startGame();
         });
 
+        document.getElementById('btn-change-image')?.addEventListener('click', () => {
+            document.getElementById('upload-success')!.classList.add('hidden');
+            document.getElementById('upload-success')!.classList.remove('flex');
+            document.getElementById('upload-dropzone')!.classList.remove('hidden');
+            (document.getElementById('file-input') as HTMLInputElement).value = '';
+        });
+
         document.getElementById('btn-close-game')?.addEventListener('click', () => {
             location.reload();
         });
