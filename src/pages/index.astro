@@ -36,6 +36,7 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
             const s = document.getElementById(`screen-${show}`);
             if (!h || !s) return;
             
+            state.currentScreen = show;
             h.classList.add('fade-out');
             setTimeout(() => {
                 h.classList.add('hidden');
@@ -43,15 +44,43 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
                 
                 s.classList.remove('hidden');
                 s.classList.add('flex', 'fade-in');
+                s.addEventListener('animationend', () => {
+                    s.classList.remove('fade-in');
+                }, { once: true });
             }, 350);
         }
 
         // --- UPLOAD LOGIC ---
+        let currentObjectUrl: string | null = null;
+        let isProcessing = false;
+
         function processUpload(event: Event) {
             const input = event.target as HTMLInputElement;
             const file = input.files?.[0];
-            if (!file) return;
+            if (!file || isProcessing) return;
 
+            // Fix 2: Validate file is actually an image
+            if (!file.type.startsWith('image/')) {
+                document.getElementById('upload-dropzone')!.classList.add('hidden');
+                document.getElementById('upload-error')!.classList.remove('hidden');
+                const errorMsg = document.querySelector('#upload-error p.text-red-600') as HTMLElement;
+                if (errorMsg) errorMsg.textContent = 'El archivo seleccionado no es una imagen válida. Solo se aceptan archivos PNG o JPG.';
+                (document.getElementById('file-input') as HTMLInputElement).value = '';
+                return;
+            }
+
+            // Validate file size (max 5MB)
+            const MAX_SIZE = 5 * 1024 * 1024;
+            if (file.size > MAX_SIZE) {
+                document.getElementById('upload-dropzone')!.classList.add('hidden');
+                document.getElementById('upload-error')!.classList.remove('hidden');
+                const errorMsg = document.querySelector('#upload-error p.text-red-600') as HTMLElement;
+                if (errorMsg) errorMsg.textContent = 'La imagen es demasiado grande. El tamaño máximo es 5MB.';
+                (document.getElementById('file-input') as HTMLInputElement).value = '';
+                return;
+            }
+
+            isProcessing = true;
             document.getElementById('upload-dropzone')!.classList.add('hidden');
             document.getElementById('upload-error')!.classList.add('hidden');
             document.getElementById('upload-loading')!.classList.remove('hidden');
@@ -68,12 +97,20 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
 
                 if (isRejected) {
                     document.getElementById('upload-error')!.classList.remove('hidden');
+                    const errorMsg = document.querySelector('#upload-error p.text-red-600') as HTMLElement;
+                    if (errorMsg) errorMsg.textContent = 'No se aceptan fotos de reciclaje, plásticos o basura en este desafío. Sube una evidencia relacionada al cuidado del agua o naturaleza.';
                     (document.getElementById('file-input') as HTMLInputElement).value = ''; 
                 } else {
-                    (document.getElementById('preview-img') as HTMLImageElement).src = URL.createObjectURL(file);
+                    // Fix 3: Revoke previous Object URL to prevent memory leak
+                    if (currentObjectUrl) {
+                        URL.revokeObjectURL(currentObjectUrl);
+                    }
+                    currentObjectUrl = URL.createObjectURL(file);
+                    (document.getElementById('preview-img') as HTMLImageElement).src = currentObjectUrl;
                     document.getElementById('upload-success')!.classList.remove('hidden');
                     document.getElementById('upload-success')!.classList.add('flex');
                 }
+                isProcessing = false;
             }, 1200);
         }
 
@@ -81,6 +118,9 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
             document.getElementById('upload-error')!.classList.add('hidden');
             document.getElementById('upload-dropzone')!.classList.remove('hidden');
             (document.getElementById('file-input') as HTMLInputElement).value = '';
+            // Restore default error message
+            const errorMsg = document.querySelector('#upload-error p.text-red-600') as HTMLElement;
+            if (errorMsg) errorMsg.textContent = 'No se aceptan fotos de reciclaje, plásticos o basura en este desafío. Sube una evidencia relacionada al cuidado del agua o naturaleza.';
         }
 
         // --- GAME LOGIC ---
@@ -204,21 +244,21 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
             goToScreen('game', 'results');
             document.getElementById('app-bg')!.style.backgroundImage = "url('https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=1920&auto=format&fit=crop')";
             
-            document.getElementById('result-score')!.innerText = `${state.score}/8`;
+            document.getElementById('result-score')!.innerText = `${state.score}/${QUESTIONS.length}`;
 
             const iconEl = document.getElementById('result-icon')!;
             const titleEl = document.getElementById('result-title')!;
             const msgEl = document.getElementById('result-msg')!;
             const resultBox = document.getElementById('result-score')!;
 
-            if (state.score === 8) {
+            if (state.score === QUESTIONS.length) {
                 iconEl.innerText = "🏆";
                 titleEl.innerText = "ECO HÉROE";
                 titleEl.className = "text-4xl md:text-5xl font-black mb-1 text-emerald-600";
                 resultBox.className = "text-5xl font-black text-emerald-500";
                 msgEl.innerText = "¡Felicidades! Has completado el desafío ambiental con puntuación perfecta.";
                 fireConfetti();
-            } else if (state.score >= 7) {
+            } else if (state.score >= QUESTIONS.length - 1) {
                 iconEl.innerText = "🌱";
                 titleEl.innerText = "ECO APRENDIZ";
                 titleEl.className = "text-4xl md:text-5xl font-black mb-1 text-blue-600";
@@ -251,8 +291,34 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
         });
 
         document.getElementById('upload-dropzone')?.addEventListener('click', () => {
-            document.getElementById('file-input')?.click();
+            const input = document.getElementById('file-input') as HTMLInputElement;
+            input.value = '';
+            input.click();
         });
+
+        // Drag & Drop support
+        const dropzone = document.getElementById('upload-dropzone');
+        if (dropzone) {
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('border-blue-500', 'bg-blue-50/50');
+            });
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('border-blue-500', 'bg-blue-50/50');
+            });
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('border-blue-500', 'bg-blue-50/50');
+                const file = (e as DragEvent).dataTransfer?.files[0];
+                if (file) {
+                    const input = document.getElementById('file-input') as HTMLInputElement;
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    input.files = dt.files;
+                    input.dispatchEvent(new Event('change'));
+                }
+            });
+        }
 
         document.getElementById('file-input')?.addEventListener('change', (e) => {
             processUpload(e);
@@ -271,6 +337,10 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
             document.getElementById('upload-success')!.classList.remove('flex');
             document.getElementById('upload-dropzone')!.classList.remove('hidden');
             (document.getElementById('file-input') as HTMLInputElement).value = '';
+            if (currentObjectUrl) {
+                URL.revokeObjectURL(currentObjectUrl);
+                currentObjectUrl = null;
+            }
         });
 
         document.getElementById('btn-close-game')?.addEventListener('click', () => {
