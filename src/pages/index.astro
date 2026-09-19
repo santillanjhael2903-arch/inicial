@@ -1,0 +1,277 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ScreenStart from '../components/ScreenStart.astro';
+import ScreenUpload from '../components/ScreenUpload.astro';
+import ScreenGame from '../components/ScreenGame.astro';
+import ScreenResults from '../components/ScreenResults.astro';
+import FeedbackBanner from '../components/FeedbackBanner.astro';
+---
+
+<Layout title="EcoGuardianes v2.0">
+    <main id="app-bg" class="h-full w-full bg-dynamic relative flex items-center justify-center flex-col overflow-hidden" style="background-image: url('https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=1920&auto=format&fit=crop');">
+        
+        <!-- Dark overlay to ensure text/cards are always readable -->
+        <div class="absolute inset-0 bg-slate-900/40 pointer-events-none z-0"></div>
+
+        <ScreenStart />
+        <ScreenUpload />
+        <ScreenGame />
+        <ScreenResults />
+        <FeedbackBanner />
+    </main>
+
+    <script>
+        import { QUESTIONS } from '../data/questions';
+
+        const state = {
+            currentScreen: 'start',
+            questionIndex: 0,
+            score: 0,
+            isAnswering: false,
+            timeoutId: null as ReturnType<typeof setTimeout> | null
+        };
+
+        function goToScreen(hide: string, show: string) {
+            const h = document.getElementById(`screen-${hide}`);
+            const s = document.getElementById(`screen-${show}`);
+            if (!h || !s) return;
+            
+            h.classList.add('fade-out');
+            setTimeout(() => {
+                h.classList.add('hidden');
+                h.classList.remove('fade-out', 'flex');
+                
+                s.classList.remove('hidden');
+                s.classList.add('flex', 'fade-in');
+            }, 350);
+        }
+
+        // --- UPLOAD LOGIC ---
+        function processUpload(event: Event) {
+            const input = event.target as HTMLInputElement;
+            const file = input.files?.[0];
+            if (!file) return;
+
+            document.getElementById('upload-dropzone')!.classList.add('hidden');
+            document.getElementById('upload-error')!.classList.add('hidden');
+            document.getElementById('upload-loading')!.classList.remove('hidden');
+            document.getElementById('upload-loading')!.classList.add('flex');
+
+            const fileName = file.name.toLowerCase();
+            
+            setTimeout(() => {
+                document.getElementById('upload-loading')!.classList.add('hidden');
+                document.getElementById('upload-loading')!.classList.remove('flex');
+
+                const rejectKeywords = ['reciclaje', 'basura', 'tacho', 'plastico', 'reciclar'];
+                const isRejected = rejectKeywords.some(word => fileName.includes(word));
+
+                if (isRejected) {
+                    document.getElementById('upload-error')!.classList.remove('hidden');
+                    (document.getElementById('file-input') as HTMLInputElement).value = ''; 
+                } else {
+                    (document.getElementById('preview-img') as HTMLImageElement).src = URL.createObjectURL(file);
+                    document.getElementById('upload-success')!.classList.remove('hidden');
+                    document.getElementById('upload-success')!.classList.add('flex');
+                }
+            }, 1200);
+        }
+
+        function resetUpload() {
+            document.getElementById('upload-error')!.classList.add('hidden');
+            document.getElementById('upload-dropzone')!.classList.remove('hidden');
+            (document.getElementById('file-input') as HTMLInputElement).value = '';
+        }
+
+        // --- GAME LOGIC ---
+        function startGame() {
+            goToScreen('upload', 'game');
+            state.questionIndex = 0;
+            state.score = 0;
+            setTimeout(renderQuestion, 400);
+        }
+
+        function renderQuestion() {
+            state.isAnswering = false;
+            const q = QUESTIONS[state.questionIndex];
+            
+            // Background
+            document.getElementById('app-bg')!.style.backgroundImage = `url('${q.bg}')`;
+
+            // Progress
+            document.getElementById('game-counter')!.innerText = `${state.questionIndex + 1} de ${QUESTIONS.length}`;
+            (document.getElementById('game-progress') as HTMLElement).style.width = `${((state.questionIndex) / QUESTIONS.length) * 100}%`;
+            
+            // Text
+            document.getElementById('game-question')!.innerText = q.text;
+
+            // Options
+            const container = document.getElementById('game-options')!;
+            container.innerHTML = '';
+            
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn w-full bg-white/90 p-5 rounded-2xl border-2 border-slate-300 text-left font-bold text-lg md:text-xl text-slate-700 shadow-sm active:bg-slate-100 flex justify-between items-center";
+                btn.innerHTML = `
+                    <span>${opt}</span>
+                    <div class="w-6 h-6 rounded-full border-2 border-slate-300 flex items-center justify-center shrink-0 indicator-circle"></div>
+                `;
+                btn.onclick = () => handleAnswer(idx, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(selectedIndex: number, selectedBtn: HTMLButtonElement) {
+            if (state.isAnswering) return;
+            state.isAnswering = true;
+
+            const q = QUESTIONS[state.questionIndex];
+            const isCorrect = (selectedIndex === q.correct);
+            const allBtns = document.querySelectorAll('.option-btn') as NodeListOf<HTMLButtonElement>;
+            
+            allBtns.forEach(btn => btn.disabled = true);
+
+            const banner = document.getElementById('feedback-banner')!;
+            const bgBanner = document.getElementById('feedback-bg')!;
+            const iconEl = document.getElementById('feedback-icon')!;
+            const titleEl = document.getElementById('feedback-title')!;
+            const descEl = document.getElementById('feedback-desc')!;
+
+            if (isCorrect) {
+                state.score++;
+                selectedBtn.classList.remove('bg-white/90', 'border-slate-300', 'text-slate-700');
+                selectedBtn.classList.add('bg-emerald-100', 'border-emerald-500', 'text-emerald-800', 'border-4');
+                const circle = selectedBtn.querySelector('.indicator-circle')!;
+                circle.className = "w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs";
+                circle.innerHTML = '<i class="fa-solid fa-check"></i>';
+
+                bgBanner.className = "w-full min-h-[140px] bg-emerald-500 rounded-t-[2rem] shadow-[0_-10px_20px_rgba(0,0,0,0.15)] p-6 flex flex-col md:flex-row items-center justify-between gap-4";
+                iconEl.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i>';
+                iconEl.className = "text-3xl bg-white rounded-full w-14 h-14 flex items-center justify-center shrink-0 shadow-sm";
+                titleEl.innerText = "¡Muy bien! Sigue así";
+                descEl.innerText = "";
+            } else {
+                selectedBtn.classList.remove('bg-white/90', 'border-slate-300', 'text-slate-700');
+                selectedBtn.classList.add('bg-red-100', 'border-red-500', 'text-red-800', 'border-4', 'animate-shake');
+                const circle = selectedBtn.querySelector('.indicator-circle')!;
+                circle.className = "w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs";
+                circle.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+
+                const correctBtn = allBtns[q.correct];
+                setTimeout(() => {
+                    correctBtn.classList.remove('bg-white/90', 'border-slate-300', 'text-slate-700');
+                    correctBtn.classList.add('bg-emerald-50', 'border-emerald-500', 'text-emerald-700', 'border-2');
+                    const cCircle = correctBtn.querySelector('.indicator-circle')!;
+                    cCircle.className = "w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs";
+                    cCircle.innerHTML = '<i class="fa-solid fa-check"></i>';
+                }, 300);
+
+                bgBanner.className = "w-full min-h-[140px] bg-red-500 rounded-t-[2rem] shadow-[0_-10px_20px_rgba(0,0,0,0.15)] p-6 flex flex-col md:flex-row items-center justify-between gap-4";
+                iconEl.innerHTML = '<i class="fa-solid fa-xmark text-red-500"></i>';
+                iconEl.className = "text-3xl bg-white rounded-full w-14 h-14 flex items-center justify-center shrink-0 shadow-sm";
+                titleEl.innerText = "😔 Lástima, sigue aprendiendo.";
+                descEl.innerHTML = `La correcta era: <strong>${q.options[q.correct]}</strong>`;
+            }
+
+            banner.classList.remove('translate-y-full');
+
+            if (state.timeoutId) clearTimeout(state.timeoutId);
+            
+            state.timeoutId = setTimeout(() => {
+                advanceGame();
+            }, 2500);
+        }
+
+        function advanceGame() {
+            const banner = document.getElementById('feedback-banner')!;
+            banner.classList.add('translate-y-full');
+
+            state.questionIndex++;
+            
+            if (state.questionIndex < QUESTIONS.length) {
+                setTimeout(() => {
+                    renderQuestion();
+                }, 350); 
+            } else {
+                setTimeout(() => {
+                    showResults();
+                }, 350);
+            }
+        }
+
+        // --- RESULTS LOGIC ---
+        function showResults() {
+            goToScreen('game', 'results');
+            document.getElementById('app-bg')!.style.backgroundImage = "url('https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=1920&auto=format&fit=crop')";
+            
+            document.getElementById('result-score')!.innerText = `${state.score}/8`;
+
+            const iconEl = document.getElementById('result-icon')!;
+            const titleEl = document.getElementById('result-title')!;
+            const msgEl = document.getElementById('result-msg')!;
+            const resultBox = document.getElementById('result-score')!;
+
+            if (state.score === 8) {
+                iconEl.innerText = "🏆";
+                titleEl.innerText = "ECO HÉROE";
+                titleEl.className = "text-4xl md:text-5xl font-black mb-1 text-emerald-600";
+                resultBox.className = "text-5xl font-black text-emerald-500";
+                msgEl.innerText = "¡Felicidades! Has completado el desafío ambiental con puntuación perfecta.";
+                fireConfetti();
+            } else if (state.score >= 7) {
+                iconEl.innerText = "🌱";
+                titleEl.innerText = "ECO APRENDIZ";
+                titleEl.className = "text-4xl md:text-5xl font-black mb-1 text-blue-600";
+                resultBox.className = "text-5xl font-black text-blue-500";
+                msgEl.innerText = "Muy buen trabajo. Demostraste sólidos conocimientos ambientales.";
+                fireConfetti(); 
+            } else {
+                iconEl.innerText = "🌎";
+                titleEl.innerText = "SIGUE APRENDIENDO";
+                titleEl.className = "text-3xl md:text-4xl font-black mb-1 text-slate-700";
+                resultBox.className = "text-5xl font-black text-slate-500";
+                msgEl.innerText = "Cada intento ayuda a conocer más sobre el cuidado del planeta. ¡Repasa e inténtalo otra vez!";
+            }
+        }
+
+        function fireConfetti() {
+            const duration = 3000;
+            const end = Date.now() + duration;
+
+            (function frame() {
+                (window as any).confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#10b981', '#3b82f6', '#f59e0b'] });
+                (window as any).confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#10b981', '#3b82f6', '#f59e0b'] });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+        }
+
+        // --- EVENT LISTENERS ---
+        document.getElementById('btn-start')?.addEventListener('click', () => {
+            goToScreen('start', 'upload');
+        });
+
+        document.getElementById('upload-dropzone')?.addEventListener('click', () => {
+            document.getElementById('file-input')?.click();
+        });
+
+        document.getElementById('file-input')?.addEventListener('change', (e) => {
+            processUpload(e);
+        });
+
+        document.getElementById('btn-retry-upload')?.addEventListener('click', () => {
+            resetUpload();
+        });
+
+        document.getElementById('btn-start-game')?.addEventListener('click', () => {
+            startGame();
+        });
+
+        document.getElementById('btn-close-game')?.addEventListener('click', () => {
+            location.reload();
+        });
+
+        document.getElementById('btn-restart')?.addEventListener('click', () => {
+            location.reload();
+        });
+    </script>
+</Layout>

@@ -1,0 +1,25 @@
+---
+---
+
+<section id="screen-game" class="relative z-10 w-full h-full hidden flex-col justify-between pt-6 pb-0">
+    
+    <!-- Header Progress -->
+    <div class="w-[90%] max-w-2xl mx-auto flex items-center gap-4 bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-md">
+        <i id="btn-close-game" class="fa-solid fa-xmark text-slate-400 text-xl cursor-pointer hover:text-slate-600"></i>
+        <div class="flex-1 h-4 bg-slate-200 rounded-full overflow-hidden">
+            <div id="game-progress" class="h-full bg-emerald-500 rounded-full transition-all duration-500 w-0"></div>
+        </div>
+        <span id="game-counter" class="font-black text-emerald-600">1/8</span>
+    </div>
+
+    <!-- Question Area -->
+    <div class="w-[90%] max-w-2xl mx-auto flex-1 flex flex-col justify-center gap-6 overflow-y-auto py-6">
+        <div class="glass-panel p-6 rounded-[2rem] shadow-lg">
+            <h2 id="game-question" class="text-2xl md:text-3xl font-black text-slate-800 leading-snug">¿Pregunta?</h2>
+        </div>
+        
+        <div id="game-options" class="flex flex-col gap-3">
+            <!-- Options injected via JS -->
+        </div>
+    </div>
+</section>
