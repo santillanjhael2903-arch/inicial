@@ -7,7 +7,7 @@ import ScreenResults from '../components/ScreenResults.astro';
 import FeedbackBanner from '../components/FeedbackBanner.astro';
 ---
 
-<Layout title="EcoGuardianes v2.0">
+<Layout title="Misión Eco-Exploradores">
     <main id="app-bg" class="min-h-[100dvh] h-[100dvh] w-full bg-dynamic relative flex items-center justify-center flex-col overflow-y-auto p-2 sm:p-4" style="background-image: url('/images/fondo.png');">
         
         <!-- Subtle overlay: active on start/upload/results, hidden on game to preserve vibrant fondo2 colors -->
@@ -503,7 +503,7 @@ Sube la foto indicada.`;
             }
 
             // Enlace directo de WhatsApp con nombre y puntaje
-            const waMsg = encodeURIComponent(`¡Hola! Soy ${state.playerName}, completé el desafío EcoGuardianes con un puntaje de ${state.score}/${QUESTIONS.length} y reclamo mi insignia de Eco-Explorador 🏅🌿`);
+            const waMsg = encodeURIComponent(`¡Hola! Soy ${state.playerName}, completé el desafío Misión Eco-Exploradores con un puntaje de ${state.score}/${QUESTIONS.length} y reclamo mi insignia de Eco-Explorador 🏅🌿`);
             const waBtn = document.getElementById('btn-whatsapp') as HTMLAnchorElement;
             if (waBtn) waBtn.href = `https://wa.me/51913346476?text=${waMsg}`;
         }

@@ -3,8 +3,33 @@
 
 <section id="screen-game" class="relative z-10 w-full h-full min-h-[100dvh] max-h-[100dvh] hidden flex-col items-center justify-start pt-2 sm:pt-3.5 pb-24 sm:pb-28 px-3 sm:px-6 select-none overflow-hidden">
     
+    <!-- ========================================================================= -->
+    <!-- ELEMENTOS DECORATIVOS ADAPTADOS PARA MÓVILES (Snoopy, tachos, letreros y árboles) -->
+    <!-- Se ajustan a los bordes y reducen su escala en celular para no tapar opciones -->
+    <!-- ========================================================================= -->
+
+    <!-- Esquina superior izquierda: Árbol y letrero de madera 'Cuidar hoy, un mejor mañana' -->
+    <div class="md:hidden pointer-events-none fixed top-0 left-0 z-0 w-22 sm:w-28 max-h-[140px] overflow-hidden opacity-90">
+        <img src="/images/mobile-sign-left.png" alt="Letrero cuidar hoy" class="w-full h-auto object-contain">
+    </div>
+
+    <!-- Esquina superior derecha: Árbol, Woodstock y letrero 'Planta árboles, siembra vida' -->
+    <div class="md:hidden pointer-events-none fixed top-0 right-0 z-0 w-22 sm:w-28 max-h-[140px] overflow-hidden opacity-90">
+        <img src="/images/mobile-sign-right.png" alt="Letrero planta árboles" class="w-full h-auto object-contain">
+    </div>
+
+    <!-- Esquina inferior izquierda: Snoopy con bolsa ecológica y los 3 tachos de reciclaje -->
+    <div class="md:hidden pointer-events-none fixed bottom-0 left-0 z-0 w-28 sm:w-36 max-h-[170px] overflow-hidden opacity-95">
+        <img src="/images/mobile-snoopy-bins.png" alt="Snoopy reciclando con tachos" class="w-full h-auto object-contain">
+    </div>
+
+    <!-- Esquina inferior derecha: Snoopy plantando un árbol y piedra de cambios -->
+    <div class="md:hidden pointer-events-none fixed bottom-0 right-0 z-0 w-28 sm:w-36 max-h-[170px] overflow-hidden opacity-95">
+        <img src="/images/mobile-snoopy-planting.png" alt="Snoopy plantando un árbol" class="w-full h-auto object-contain">
+    </div>
+
     <!-- Top Header Progress (Exact Duolingo capsule as in reference screenshots) -->
-    <div class="w-full max-w-sm sm:max-w-md mx-auto flex items-center gap-2.5 bg-white/95 backdrop-blur-sm rounded-full px-3.5 py-1.5 shadow-sm border border-slate-200/80 shrink-0 mb-1 sm:mb-2">
+    <div class="relative z-20 w-full max-w-sm sm:max-w-md mx-auto flex items-center gap-2.5 bg-white/95 backdrop-blur-sm rounded-full px-3.5 py-1.5 shadow-sm border border-slate-200/80 shrink-0 mb-1 sm:mb-2">
         <button id="btn-close-game" aria-label="Cerrar juego" class="text-slate-400 hover:text-slate-700 text-base p-0.5 transition-colors flex items-center justify-center font-bold cursor-pointer">
             <i class="fa-solid fa-xmark text-lg"></i>
         </button>
@@ -15,10 +40,10 @@
     </div>
 
     <!-- Main Game Canvas (Duolingo Layout: Title + Mascot & Green Speech Bubble + Centered Options) -->
-    <div class="w-full max-w-sm sm:max-w-md mx-auto flex flex-col items-center gap-1.5 sm:gap-2.5 shrink-0 mt-0.5">
+    <div class="relative z-20 w-full max-w-sm sm:max-w-md mx-auto flex flex-col items-center gap-1.5 sm:gap-2.5 shrink-0 mt-0.5">
         
         <!-- Duolingo Instruction Title with Bullet Dot -->
-        <h2 class="text-xs sm:text-sm md:text-base font-extrabold text-[#0f3057] text-center tracking-tight flex items-center justify-center gap-1.5 shrink-0">
+        <h2 class="text-xs sm:text-sm md:text-base font-extrabold text-[#0f3057] text-center tracking-tight flex items-center justify-center gap-1.5 shrink-0 bg-white/60 backdrop-blur-[2px] px-3 py-0.5 rounded-full shadow-xs">
             <span class="text-emerald-500 font-black text-base">•</span>
             <span id="game-title-text">¡Vamos, Eco-Explorador! Escoge la respuesta correcta</span>
         </h2>

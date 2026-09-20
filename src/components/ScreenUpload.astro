@@ -50,20 +50,18 @@
         <span class="text-slate-500 text-[10px] sm:text-[11px] mt-0.5">Verificando acción ecológica o reciclaje</span>
     </div>
 
-    <!-- Error (Mensaje exacto: "Sube la foto indicada.") -->
-    <div id="upload-error" class="hidden w-full border-2 border-rose-300 bg-rose-50 p-2.5 sm:p-3 rounded-2xl text-left shadow-sm mb-1 shrink-0">
-        <div class="flex items-start gap-2">
-            <i class="fa-solid fa-circle-xmark text-rose-500 text-lg mt-0.5 shrink-0"></i>
-            <div>
-                <h4 class="font-black text-rose-800 text-xs sm:text-sm">Foto no válida</h4>
-                <p id="upload-error-text" class="text-rose-700 text-xs font-bold my-1 leading-snug">
-                    Sube la foto indicada.
-                </p>
-                <button id="btn-retry-upload" class="bg-white text-rose-700 font-black text-xs py-1 px-2.5 rounded-lg border border-rose-300 shadow-sm active:scale-95 transition-transform mt-0.5 cursor-pointer">
-                    Intentar de nuevo
-                </button>
-            </div>
+    <!-- Error (Mensaje exacto: "Sube la foto indicada." - Adaptado al medio) -->
+    <div id="upload-error" class="hidden w-full border-2 border-rose-300 bg-rose-50 p-3 sm:p-4 rounded-2xl text-center shadow-sm mb-1 shrink-0 flex flex-col items-center justify-center">
+        <div class="w-10 h-10 rounded-full bg-rose-100 border border-rose-300 flex items-center justify-center text-rose-500 text-xl mb-1.5 shadow-xs">
+            <i class="fa-solid fa-circle-xmark"></i>
         </div>
+        <h4 class="font-black text-rose-800 text-sm sm:text-base">Foto no válida</h4>
+        <p id="upload-error-text" class="text-rose-700 text-xs sm:text-sm font-bold my-1 leading-snug">
+            Sube la foto indicada.
+        </p>
+        <button id="btn-retry-upload" class="bg-white hover:bg-rose-100/60 text-rose-700 font-black text-xs sm:text-sm py-1.5 px-4 rounded-xl border border-rose-300 shadow-sm active:scale-95 transition-transform mt-1 cursor-pointer">
+            Intentar de nuevo
+        </button>
     </div>
 
     <!-- Estado Éxito: Preview + Alerta de 1era Captura + Botón Iniciar desafío -->
