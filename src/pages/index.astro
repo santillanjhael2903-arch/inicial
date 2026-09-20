@@ -116,12 +116,12 @@ Sube la foto indicada.`;
             'trash barrel', 'trash bin', 'crate', 'bucket', 'barrel', 'tree', 'plant', 'flowerpot',
             'pot', 'garden', 'park', 'lawn', 'river', 'lake', 'stream', 'seashore', 'lakeside',
             'forest', 'valley', 'soil', 'earth', 'ground', 'dirt', 'shovel', 'watering can',
-            'wheelbarrow', 'daisy', 'sprout'
+            'wheelbarrow', 'daisy', 'sprout', 'pitcher', 'vase', 'greenhouse'
         ];
 
         // Categorías que indican exclusivamente pantallas, muebles o interiores (NO ambientales)
         const HARD_NON_ECO_CLASSES = [
-            'comic book', 'book jacket', 'web site', 'menu', 'envelope', 'packet', 'scoreboard',
+            'comic book', 'book jacket', 'web site', 'menu', 'envelope', 'scoreboard',
             'cellular telephone', 'cellphone', 'screen', 'monitor', 'television', 'laptop',
             'notebook', 'keyboard', 'mouse', 'desk', 'dining table', 'couch', 'sofa', 'wardrobe',
             'bed', 'car', 'automobile', 'cat', 'dog', 'pizza'
@@ -133,7 +133,7 @@ Sube la foto indicada.`;
             'recicl', 'reciclar', 'reciclaje', 'tacho', 'basura', 'limpieza', 'desecho', 'residuo',
             'plastico', 'botella', 'botellas', 'vidrio', 'papel', 'carton', 'lata',
             'rio', 'huallaga', 'cayhuaynita', 'ecolog', 'ecologia', 'ambiente', 'ambiental',
-            'fondo2', 'snoopy', 'verde', 'naturaleza', 'tierra', 'jardin'
+            'fondo2', 'snoopy', 'verde', 'naturaleza', 'tierra', 'jardin', 'maceta'
         ];
 
         // Archivos o temas explícitamente no relacionados
@@ -214,17 +214,17 @@ Sube la foto indicada.`;
                 canvas.height = 100;
                 const ctx = canvas.getContext('2d');
                 let whiteRatio = 0;
-                let greenRatio = 0;
-                let soilRatio = 0;
-                let blueRatio = 0;
+                let plantGreenRatio = 0;
+                let earthTerracottaRatio = 0;
+                let waterSkyBlueRatio = 0;
 
                 if (ctx) {
                     ctx.drawImage(imgElement, 0, 0, 100, 100);
                     const imgData = ctx.getImageData(0, 0, 100, 100).data;
                     let whiteCount = 0;
-                    let greenCount = 0;
-                    let soilCount = 0;
-                    let blueCount = 0;
+                    let plantGreenCount = 0;
+                    let earthTerracottaCount = 0;
+                    let waterSkyBlueCount = 0;
                     const totalPixels = 100 * 100;
 
                     for (let i = 0; i < imgData.length; i += 4) {
@@ -233,29 +233,49 @@ Sube la foto indicada.`;
                         const b = imgData[i + 2];
 
                         // Globos de diálogo o fondos blancos planos de documentos/folletos
-                        if (r > 235 && g > 235 && b > 235) whiteCount++;
-                        // Vegetación / verde natural
-                        else if (g > 60 && g > r * 1.08 && g > b * 1.05) greenCount++;
-                        // Tierra / suelo de siembra / macetas
-                        else if (r > 50 && r < 165 && g > 35 && g < 135 && b < 95 && r > g && g > b) soilCount++;
+                        if (r > 230 && g > 230 && b > 230) {
+                            whiteCount++;
+                        }
+                        // Vegetación, hojas de plantas, suculentas y hojas tropicales oscuras
+                        else if ((g > 25 && g > r * 1.04 && g > b * 1.02) || (g > 48 && g > r * 1.06 && g > b * 0.95)) {
+                            plantGreenCount++;
+                        }
+                        // Tierra de siembra, macetas de barro, sustrato, ladrillos de jardín
+                        else if (r > 45 && r < 215 && g > 25 && g < 155 && b < 120 && r > g && g >= b * 0.9) {
+                            earthTerracottaCount++;
+                        }
                         // Agua de río o cielo despejado
-                        else if (b > 85 && b > r * 1.12 && b > g * 0.95) blueCount++;
+                        else if (b > 85 && b > r * 1.15 && b > g * 0.95) {
+                            waterSkyBlueCount++;
+                        }
                     }
 
                     whiteRatio = whiteCount / totalPixels;
-                    greenRatio = greenCount / totalPixels;
-                    soilRatio = soilCount / totalPixels;
-                    blueRatio = blueCount / totalPixels;
+                    plantGreenRatio = plantGreenCount / totalPixels;
+                    earthTerracottaRatio = earthTerracottaCount / totalPixels;
+                    waterSkyBlueRatio = waterSkyBlueCount / totalPixels;
 
-                    // Si más del 25% son globos de diálogo o texto de folletos/pósters escolares, rechazar
-                    if (whiteRatio > 0.25) {
+                    // Si más del 22% son globos de diálogo o texto de folletos/pósters escolares, rechazar de inmediato
+                    if (whiteRatio > 0.22) {
                         URL.revokeObjectURL(tempUrl);
                         console.log("Rechazado por ser infografía/póster de texto:", { whiteRatio });
                         return { isValid: false, message: 'Sube la foto indicada.' };
                     }
+
+                    // Aceptación inmediata si muestra plantas en macetas (incluso recicladas), jardines, siembra o naturaleza
+                    const hasPlantWithSoilOrPot = (plantGreenRatio > 0.035 && earthTerracottaRatio > 0.03);
+                    const hasNatureLandscape = (plantGreenRatio > 0.04 && (waterSkyBlueRatio > 0.04 || earthTerracottaRatio > 0.02));
+                    const hasRichVegetation = plantGreenRatio > 0.12;
+                    const hasRichSoil = earthTerracottaRatio > 0.08 && plantGreenRatio > 0.02;
+
+                    if (hasPlantWithSoilOrPot || hasNatureLandscape || hasRichVegetation || hasRichSoil) {
+                        URL.revokeObjectURL(tempUrl);
+                        console.log("Aceptado por análisis de naturaleza/maceta:", { plantGreenRatio, earthTerracottaRatio, waterSkyBlueRatio });
+                        return { isValid: true, message: 'VÁLIDO' };
+                    }
                 }
 
-                // Clasificación con MobileNet
+                // Si no tiene vegetación evidente, verificar con MobileNet objetos de reciclaje (tachos, botellas, bolsas, cajas)
                 const model = await getMobileNet();
                 if (model) {
                     const predictions = await model.classify(imgElement, 6);
@@ -278,15 +298,12 @@ Sube la foto indicada.`;
                         return { isValid: false, message: 'Sube la foto indicada.' };
                     }
 
-                    // Si detectó elementos ecológicos con certeza
-                    if (ecoScore > 0.08) {
+                    // Si detectó elementos ecológicos o de reciclaje con certeza
+                    if (ecoScore > 0.06) {
                         return { isValid: true, message: 'VÁLIDO' };
                     }
-                }
-
-                // Si contiene vegetación natural combinada con tierra de siembra o agua de río
-                if ((greenRatio > 0.07 && (soilRatio > 0.015 || blueRatio > 0.03)) || greenRatio > 0.15 || soilRatio > 0.04) {
-                    return { isValid: true, message: 'VÁLIDO' };
+                } else {
+                    URL.revokeObjectURL(tempUrl);
                 }
             } catch (err) {
                 console.warn("Fallo en análisis visual local:", err);
@@ -310,12 +327,12 @@ Sube la foto indicada.`;
                 return;
             }
 
-            const MAX_SIZE = 5 * 1024 * 1024;
+            const MAX_SIZE = 25 * 1024 * 1024;
             if (file.size > MAX_SIZE) {
                 document.getElementById('upload-initial-box')?.classList.add('hidden');
                 document.getElementById('upload-error')!.classList.remove('hidden');
                 const errorMsg = document.getElementById('upload-error-text');
-                if (errorMsg) errorMsg.textContent = 'La imagen es demasiado grande. Máximo 5MB.';
+                if (errorMsg) errorMsg.textContent = 'La imagen es demasiado grande. Máximo 25MB.';
                 (document.getElementById('file-input') as HTMLInputElement).value = '';
                 return;
             }
