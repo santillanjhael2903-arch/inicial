@@ -1,11 +1,11 @@
 ---
 ---
 
-<section id="screen-game" class="relative z-10 w-full h-full max-h-[100dvh] hidden flex-col justify-between pt-2 sm:pt-3.5 pb-20 sm:pb-24 px-3 sm:px-6 select-none">
+<section id="screen-game" class="relative z-10 w-full h-full min-h-[100dvh] max-h-[100dvh] hidden flex-col justify-between pt-2.5 sm:pt-4 pb-4 sm:pb-6 px-3 sm:px-6 select-none overflow-hidden">
     
-    <!-- Top Header Progress (Exact Duolingo capsule as in reference screenshot) -->
-    <div class="w-full max-w-sm sm:max-w-md mx-auto flex items-center gap-2.5 bg-white/95 backdrop-blur-sm rounded-full px-3.5 py-1.5 shadow-sm border border-slate-200/80 mt-1">
-        <button id="btn-close-game" aria-label="Cerrar juego" class="text-slate-400 hover:text-slate-700 text-base p-0.5 transition-colors flex items-center justify-center font-bold">
+    <!-- Top Header Progress (Exact Duolingo capsule as in reference screenshots) -->
+    <div class="w-full max-w-sm sm:max-w-md mx-auto flex items-center gap-2.5 bg-white/95 backdrop-blur-sm rounded-full px-3.5 py-1.5 shadow-sm border border-slate-200/80 mt-1 shrink-0">
+        <button id="btn-close-game" aria-label="Cerrar juego" class="text-slate-400 hover:text-slate-700 text-base p-0.5 transition-colors flex items-center justify-center font-bold cursor-pointer">
             <i class="fa-solid fa-xmark text-lg"></i>
         </button>
         <div class="flex-1 h-2 sm:h-2.5 bg-slate-200/90 rounded-full overflow-hidden">
@@ -15,23 +15,23 @@
     </div>
 
     <!-- Main Game Canvas (Duolingo Layout: Title + Mascot & Green Speech Bubble + Centered Options) -->
-    <div class="w-full max-w-md mx-auto flex-1 flex flex-col justify-center gap-2.5 sm:gap-3 my-auto py-1">
+    <div class="w-full max-w-sm sm:max-w-md mx-auto flex-1 flex flex-col justify-center gap-2.5 sm:gap-3 my-auto py-1">
         
         <!-- Duolingo Instruction Title with Bullet Dot (Matching reference screenshot) -->
-        <h2 class="text-xs sm:text-sm md:text-base font-extrabold text-[#0f3057] text-center tracking-tight flex items-center justify-center gap-1.5">
+        <h2 class="text-xs sm:text-sm md:text-base font-extrabold text-[#0f3057] text-center tracking-tight flex items-center justify-center gap-1.5 shrink-0">
             <span class="text-emerald-500 font-black text-base">•</span>
             <span id="game-title-text">¡Vamos, Eco-Explorador! Escoge la respuesta correcta</span>
         </h2>
 
         <!-- Mascot & Speech Bubble Scene (Exact layout from user screenshot) -->
-        <div class="flex items-center gap-2.5 sm:gap-3.5 w-full justify-center">
+        <div class="flex items-center gap-2.5 sm:gap-3.5 w-full justify-center shrink-0">
             <!-- Mascota con sombrero de explorador -->
             <div class="shrink-0 flex items-center justify-center">
-                <img src="/images/pensativo.png" alt="Bagre explorador" class="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-contain drop-shadow-md">
+                <img src="/images/pensativo.png" alt="Bagre explorador" class="w-18 h-18 xs:w-20 xs:h-20 sm:w-24 sm:h-24 md:w-26 md:h-26 object-contain drop-shadow-md">
             </div>
 
             <!-- Globo de diálogo VERDE Duolingo con piquito apuntando a la izquierda -->
-            <div class="relative flex-1 bg-[#008f5d] text-white py-3 px-3.5 sm:py-4 sm:px-4 rounded-2xl rounded-bl-sm shadow-md border border-emerald-700">
+            <div class="relative flex-1 bg-[#008f5d] text-white py-2.5 px-3 sm:py-3.5 sm:px-4 rounded-2xl rounded-bl-sm shadow-md border border-emerald-700">
                 <!-- Piquito que conecta con la mascota -->
                 <div class="absolute -left-2 bottom-3.5 w-0 h-0 border-t-[6px] border-t-transparent border-r-[8px] border-r-[#008f5d] border-b-[6px] border-b-transparent"></div>
                 

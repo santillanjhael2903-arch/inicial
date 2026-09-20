@@ -8,7 +8,7 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
 ---
 
 <Layout title="EcoGuardianes v2.0">
-    <main id="app-bg" class="h-full w-full bg-dynamic relative flex items-center justify-center flex-col overflow-hidden" style="background-image: url('/images/fondo.png');">
+    <main id="app-bg" class="min-h-[100dvh] h-[100dvh] w-full bg-dynamic relative flex items-center justify-center flex-col overflow-y-auto p-2 sm:p-4" style="background-image: url('/images/fondo.png');">
         
         <!-- Subtle overlay: active on start/upload/results, hidden on game to preserve vibrant fondo2 colors -->
         <div id="bg-overlay" class="absolute inset-0 bg-gradient-to-b from-slate-950/50 via-slate-900/30 to-slate-950/60 pointer-events-none z-0 backdrop-blur-[1px] transition-opacity duration-300"></div>
@@ -40,13 +40,18 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
             
             state.currentScreen = show;
 
-            // Overlay transparente en juego para que fondo2 luzca con todo su brillo y color
+            // Overlay y scroll adaptativo: durante el juego fondo2 es 100% brillante y sin scroll
             const overlay = document.getElementById('bg-overlay');
+            const appBg = document.getElementById('app-bg');
             if (overlay) {
                 if (show === 'game') {
                     overlay.classList.add('opacity-0');
+                    appBg?.classList.remove('overflow-y-auto');
+                    appBg?.classList.add('overflow-hidden');
                 } else {
                     overlay.classList.remove('opacity-0');
+                    appBg?.classList.add('overflow-y-auto');
+                    appBg?.classList.remove('overflow-hidden');
                 }
             }
 
@@ -101,7 +106,7 @@ Sube la foto indicada.`;
             return null;
         }
 
-        // Intento de precarga temprana de IA
+        // Precarga temprana
         setTimeout(() => { getMobileNet(); }, 1000);
 
         // Lista de conceptos ecológicos y de reciclaje reconocidos
@@ -185,7 +190,6 @@ Sube la foto indicada.`;
                     
                     console.log("Predicciones IA MobileNet:", predictions);
 
-                    // Verificar si alguna predicción coincide con elementos ecológicos/reciclaje
                     let ecoScore = 0;
                     let nonEcoScore = 0;
 
@@ -200,12 +204,10 @@ Sube la foto indicada.`;
                         if (isNonEco) nonEcoScore += prob;
                     }
 
-                    // Si se detectaron claramente elementos de reciclaje o medio ambiente
                     if (ecoScore > 0.15 || (ecoScore > 0.05 && ecoScore >= nonEcoScore)) {
                         return { isValid: true, message: 'VÁLIDO' };
                     }
 
-                    // Si se detectaron elementos explícitamente no relacionados (pantallas, selfies, autos, etc.)
                     if (nonEcoScore > 0.3) {
                         return { isValid: false, message: 'Sube la foto indicada.' };
                     }
@@ -229,11 +231,8 @@ Sube la foto indicada.`;
                         const g = imgData[i + 1];
                         const b = imgData[i + 2];
 
-                        // Detección de tonos verdes (naturaleza, vegetación, tachos ecológicos)
                         if (g > 70 && g > r * 1.15 && g > b * 1.1) greenCount++;
-                        // Detección de tonos azules/celestes (río, cielo despejado, tachos de papel)
                         else if (b > 80 && b > r * 1.15 && b > g * 0.95) blueCount++;
-                        // Detección de tonos de piel predominantes (selfies de cerca)
                         else if (r > 120 && g > 80 && b > 60 && r > g && g > b && (r - g) > 15) skinCount++;
                     }
 
@@ -241,7 +240,6 @@ Sube la foto indicada.`;
                     const blueRatio = blueCount / totalPixels;
                     const skinRatio = skinCount / totalPixels;
 
-                    // Nombre de archivo con palabras clave ecológicas
                     const fileName = file.name.toLowerCase();
                     const hasEcoName = ECO_KEYWORDS.some(kw => fileName.includes(kw));
 
@@ -249,7 +247,6 @@ Sube la foto indicada.`;
                         return { isValid: true, message: 'VÁLIDO' };
                     }
 
-                    // Si es predominantemente una selfie, captura de pantalla de interiores o sin contexto ambiental
                     if (skinRatio > 0.35 || (greenRatio < 0.04 && blueRatio < 0.05)) {
                         return { isValid: false, message: 'Sube la foto indicada.' };
                     }
@@ -258,14 +255,13 @@ Sube la foto indicada.`;
                 console.warn("Fallo en análisis visual local:", err);
             }
 
-            // Si el nombre del archivo contiene indicios ecológicos
+            // Fallback por nombre
             const fileName = file.name.toLowerCase();
             const hasEcoName = ['recicl', 'basura', 'tacho', 'rio', 'huallaga', 'arbol', 'planta', 'plastico', 'botella'].some(w => fileName.includes(w));
             if (hasEcoName) {
                 return { isValid: true, message: 'VÁLIDO' };
             }
 
-            // Por defecto, si es cualquier foto no relacionada, se rechaza
             return { isValid: false, message: 'Sube la foto indicada.' };
         }
 
@@ -313,6 +309,14 @@ Sube la foto indicada.`;
                     (document.getElementById('preview-img') as HTMLImageElement).src = currentObjectUrl;
                     document.getElementById('upload-success')!.classList.remove('hidden');
                     document.getElementById('upload-success')!.classList.add('flex');
+
+                    // Auto-scroll suave para asegurar que el botón "Iniciar desafío" esté inmediatamente visible en celulares
+                    const uploadScreen = document.getElementById('screen-upload');
+                    if (uploadScreen) {
+                        setTimeout(() => {
+                            uploadScreen.scrollTo({ top: uploadScreen.scrollHeight, behavior: 'smooth' });
+                        }, 80);
+                    }
                 } else {
                     document.getElementById('upload-error')!.classList.remove('hidden');
                     const errorMsg = document.getElementById('upload-error-text');
