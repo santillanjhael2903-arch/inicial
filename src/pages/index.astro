@@ -113,25 +113,52 @@ Sube la foto indicada.`;
         const GENUINE_ECO_CLASSES = [
             'water bottle', 'pop bottle', 'soda bottle', 'beer bottle', 'wine bottle', 'pill bottle',
             'water jug', 'plastic bag', 'ashcan', 'trash can', 'garbage can', 'wastebin', 'dustbin',
-            'trash barrel', 'trash bin', 'tree', 'plant', 'flowerpot', 'garden', 'park', 'lawn',
-            'river', 'lake', 'stream', 'seashore', 'lakeside', 'forest', 'valley', 'soil',
-            'earth', 'ground', 'dirt', 'shovel', 'watering can', 'wheelbarrow'
+            'trash barrel', 'trash bin', 'crate', 'bucket', 'barrel', 'tree', 'plant', 'flowerpot',
+            'pot', 'garden', 'park', 'lawn', 'river', 'lake', 'stream', 'seashore', 'lakeside',
+            'forest', 'valley', 'soil', 'earth', 'ground', 'dirt', 'shovel', 'watering can',
+            'wheelbarrow', 'daisy', 'sprout'
         ];
 
-        // Conceptos que indican explícitamente gráficos, texto, personas, ropa o interiores (NO ambientales)
-        const NON_ECO_CLASSES = [
-            'comic book', 'book jacket', 'web site', 'menu', 'envelope', 'packet', 'poster',
-            'scoreboard', 'jersey', 'cardigan', 'sweater', 'necktie', 'bow tie', 'suit',
-            'spectacles', 'sunglasses', 'wig', 'pajama', 't-shirt', 'jean', 'cellular telephone',
-            'cellphone', 'screen', 'monitor', 'television', 'laptop', 'computer', 'notebook',
-            'keyboard', 'mouse', 'desk', 'dining table', 'couch', 'sofa', 'wardrobe', 'bed',
-            'car', 'automobile', 'cat', 'dog', 'pizza', 'handkerchief'
+        // Categorías que indican exclusivamente pantallas, muebles o interiores (NO ambientales)
+        const HARD_NON_ECO_CLASSES = [
+            'comic book', 'book jacket', 'web site', 'menu', 'envelope', 'packet', 'scoreboard',
+            'cellular telephone', 'cellphone', 'screen', 'monitor', 'television', 'laptop',
+            'notebook', 'keyboard', 'mouse', 'desk', 'dining table', 'couch', 'sofa', 'wardrobe',
+            'bed', 'car', 'automobile', 'cat', 'dog', 'pizza'
+        ];
+
+        // Palabras clave que representan acciones ecológicas o elementos ambientales en nombres de archivo
+        const ECO_FILENAME_TERMS = [
+            'plantar', 'arbol', 'siembra', 'sembrar', 'sembrando', 'planta', 'arboles',
+            'recicl', 'reciclar', 'reciclaje', 'tacho', 'basura', 'limpieza', 'desecho', 'residuo',
+            'plastico', 'botella', 'botellas', 'vidrio', 'papel', 'carton', 'lata',
+            'rio', 'huallaga', 'cayhuaynita', 'ecolog', 'ecologia', 'ambiente', 'ambiental',
+            'fondo2', 'snoopy', 'verde', 'naturaleza', 'tierra', 'jardin'
+        ];
+
+        // Archivos o temas explícitamente no relacionados
+        const NON_ECO_FILENAME_TERMS = [
+            'classroom', 'frases', 'ingles', 'grammar', 'english', 'factura', 'recibo',
+            'ticket', 'meme', 'gameplay', 'juego', 'invalido', 'error'
         ];
 
         async function validateImageWithGemini(file: File): Promise<{ isValid: boolean; message: string }> {
+            const fileName = file.name.toLowerCase();
+
+            // 1. Descarte inmediato por nombres de archivo no ambientales (clases de inglés, recibos, etc.)
+            const isExplicitlyNonEco = NON_ECO_FILENAME_TERMS.some(term => fileName.includes(term));
+            if (isExplicitlyNonEco) {
+                return { isValid: false, message: 'Sube la foto indicada.' };
+            }
+
+            // 2. Si el nombre del archivo contiene una acción ambiental clara (ej. 'plantar un arbol', 'reciclaje', 'fondo2')
+            const hasEcoFilename = ECO_FILENAME_TERMS.some(term => fileName.includes(term));
+            if (hasEcoFilename) {
+                return { isValid: true, message: 'VÁLIDO' };
+            }
+
+            // 3. Si el usuario configuró API Key de Gemini, se consulta directamente a Gemini Vision 1.5 Flash
             const apiKey = (import.meta.env.PUBLIC_GEMINI_API_KEY || localStorage.getItem('gemini_api_key') || (window as any).GEMINI_API_KEY);
-            
-            // 1. Si el usuario configuró API Key de Gemini, se ejecuta con Gemini Vision real
             if (apiKey && typeof apiKey === 'string' && apiKey.trim().length > 10) {
                 try {
                     const base64Data = await fileToBase64(file);
@@ -171,7 +198,7 @@ Sube la foto indicada.`;
                 }
             }
 
-            // 2. Análisis real en el navegador mediante Computer Vision
+            // 4. Análisis visual en el navegador mediante Computer Vision (Canvas y MobileNet)
             try {
                 const imgElement = new Image();
                 const tempUrl = URL.createObjectURL(file);
@@ -181,17 +208,23 @@ Sube la foto indicada.`;
                     imgElement.src = tempUrl;
                 });
 
-                // Detección en Canvas: Detección de pósters, infografías, viñetas de texto y dibujos planos
-                // (Evita que folletos, viñetas de diálogo o dibujos con verde como 'Classroom Phrases' pasen por error)
+                // Análisis en Canvas: Detección de infografías/posters con globos de diálogo vs fotos reales
                 const canvas = document.createElement('canvas');
                 canvas.width = 100;
                 canvas.height = 100;
                 const ctx = canvas.getContext('2d');
+                let whiteRatio = 0;
+                let greenRatio = 0;
+                let soilRatio = 0;
+                let blueRatio = 0;
+
                 if (ctx) {
                     ctx.drawImage(imgElement, 0, 0, 100, 100);
                     const imgData = ctx.getImageData(0, 0, 100, 100).data;
                     let whiteCount = 0;
-                    let skinCount = 0;
+                    let greenCount = 0;
+                    let soilCount = 0;
+                    let blueCount = 0;
                     const totalPixels = 100 * 100;
 
                     for (let i = 0; i < imgData.length; i += 4) {
@@ -199,24 +232,30 @@ Sube la foto indicada.`;
                         const g = imgData[i + 1];
                         const b = imgData[i + 2];
 
-                        // Globos de diálogo / fondos blancos de documentos / viñetas
-                        if (r > 225 && g > 225 && b > 225) whiteCount++;
-                        // Detección de tonos de piel predominantes (personas / selfies de cerca)
-                        else if (r > 120 && g > 80 && b > 60 && r > g && g > b && (r - g) > 15) skinCount++;
+                        // Globos de diálogo o fondos blancos planos de documentos/folletos
+                        if (r > 235 && g > 235 && b > 235) whiteCount++;
+                        // Vegetación / verde natural
+                        else if (g > 60 && g > r * 1.08 && g > b * 1.05) greenCount++;
+                        // Tierra / suelo de siembra / macetas
+                        else if (r > 50 && r < 165 && g > 35 && g < 135 && b < 95 && r > g && g > b) soilCount++;
+                        // Agua de río o cielo despejado
+                        else if (b > 85 && b > r * 1.12 && b > g * 0.95) blueCount++;
                     }
 
-                    const whiteRatio = whiteCount / totalPixels;
-                    const skinRatio = skinCount / totalPixels;
+                    whiteRatio = whiteCount / totalPixels;
+                    greenRatio = greenCount / totalPixels;
+                    soilRatio = soilCount / totalPixels;
+                    blueRatio = blueCount / totalPixels;
 
-                    // Si tiene un alto porcentaje de blanco por globos de diálogo/texto o es selfie de cerca
-                    if (whiteRatio > 0.18 || skinRatio > 0.35) {
+                    // Si más del 25% son globos de diálogo o texto de folletos/pósters escolares, rechazar
+                    if (whiteRatio > 0.25) {
                         URL.revokeObjectURL(tempUrl);
-                        console.log("Rechazado por ser póster/infografía/dibujo o selfie:", { whiteRatio, skinRatio });
+                        console.log("Rechazado por ser infografía/póster de texto:", { whiteRatio });
                         return { isValid: false, message: 'Sube la foto indicada.' };
                     }
                 }
 
-                // Clasificación estricta con MobileNet (buscar objetos ambientales/reciclaje)
+                // Clasificación con MobileNet
                 const model = await getMobileNet();
                 if (model) {
                     const predictions = await model.classify(imgElement, 6);
@@ -224,42 +263,36 @@ Sube la foto indicada.`;
                     console.log("Predicciones IA MobileNet:", predictions);
 
                     let ecoScore = 0;
-                    let nonEcoScore = 0;
+                    let hardNonEcoScore = 0;
 
                     for (const pred of predictions) {
                         const label = pred.className.toLowerCase();
                         const prob = pred.probability;
 
-                        const isEco = GENUINE_ECO_CLASSES.some(item => label.includes(item));
-                        const isNonEco = NON_ECO_CLASSES.some(item => label.includes(item));
-
-                        if (isEco) ecoScore += prob;
-                        if (isNonEco) nonEcoScore += prob;
+                        if (GENUINE_ECO_CLASSES.some(item => label.includes(item))) ecoScore += prob;
+                        if (HARD_NON_ECO_CLASSES.some(item => label.includes(item))) hardNonEcoScore += prob;
                     }
 
-                    // Si detecta prendas, pósters, viñetas, personas o pantallas
-                    if (nonEcoScore > 0.15 || (nonEcoScore > 0.05 && nonEcoScore >= ecoScore)) {
-                        console.log("Rechazado por coincidencia con categorías no ecológicas:", { nonEcoScore, ecoScore });
+                    // Si detectó pantallas o muebles de interior con alto puntaje sin nada ecológico
+                    if (hardNonEcoScore > 0.35 && ecoScore < 0.05) {
                         return { isValid: false, message: 'Sube la foto indicada.' };
                     }
 
-                    // Debe haber detectado con certeza un elemento de reciclaje o medio ambiente
-                    if (ecoScore > 0.15) {
+                    // Si detectó elementos ecológicos con certeza
+                    if (ecoScore > 0.08) {
                         return { isValid: true, message: 'VÁLIDO' };
                     }
+                }
+
+                // Si contiene vegetación natural combinada con tierra de siembra o agua de río
+                if ((greenRatio > 0.07 && (soilRatio > 0.015 || blueRatio > 0.03)) || greenRatio > 0.15 || soilRatio > 0.04) {
+                    return { isValid: true, message: 'VÁLIDO' };
                 }
             } catch (err) {
                 console.warn("Fallo en análisis visual local:", err);
             }
 
-            // Fallback por nombre explícito de reciclaje en el archivo
-            const fileName = file.name.toLowerCase();
-            const hasEcoName = ['recicl', 'basura', 'tacho', 'rio_huallaga', 'huallaga', 'arbol_plantado', 'botellas_reciclaje'].some(w => fileName.includes(w));
-            if (hasEcoName) {
-                return { isValid: true, message: 'VÁLIDO' };
-            }
-
-            // Por defecto, cualquier foto no relacionada (incluyendo imágenes verdes que no son ambientales) se rechaza
+            // Por defecto, cualquier foto que no muestre acciones ambientales se rechaza
             return { isValid: false, message: 'Sube la foto indicada.' };
         }
 
