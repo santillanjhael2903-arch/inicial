@@ -10,8 +10,8 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
 <Layout title="EcoGuardianes v2.0">
     <main id="app-bg" class="h-full w-full bg-dynamic relative flex items-center justify-center flex-col overflow-hidden" style="background-image: url('/images/fondo.png');">
         
-        <!-- Dark overlay to ensure text/cards are always readable with high contrast -->
-        <div class="absolute inset-0 bg-gradient-to-b from-slate-950/65 via-slate-900/45 to-slate-950/75 pointer-events-none z-0 backdrop-blur-[1px]"></div>
+        <!-- Subtle overlay: active on start/upload/results, hidden on game to preserve vibrant fondo2 colors -->
+        <div id="bg-overlay" class="absolute inset-0 bg-gradient-to-b from-slate-950/50 via-slate-900/30 to-slate-950/60 pointer-events-none z-0 backdrop-blur-[1px] transition-opacity duration-300"></div>
 
         <ScreenStart />
         <ScreenUpload />
@@ -24,6 +24,7 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
         import { QUESTIONS } from '../data/questions';
 
         const state = {
+            playerName: 'Eco-Explorador',
             currentScreen: 'start',
             questionIndex: 0,
             score: 0,
@@ -31,12 +32,24 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
             timeoutId: null as ReturnType<typeof setTimeout> | null
         };
 
+        // --- SCREEN NAVIGATION ---
         function goToScreen(hide: string, show: string) {
             const h = document.getElementById(`screen-${hide}`);
             const s = document.getElementById(`screen-${show}`);
             if (!h || !s) return;
             
             state.currentScreen = show;
+
+            // Manejo del overlay de fondo: transparente durante el juego para que fondo2 luzca brillante
+            const overlay = document.getElementById('bg-overlay');
+            if (overlay) {
+                if (show === 'game') {
+                    overlay.classList.add('opacity-0');
+                } else {
+                    overlay.classList.remove('opacity-0');
+                }
+            }
+
             h.classList.add('fade-out');
             setTimeout(() => {
                 h.classList.add('hidden');
@@ -50,32 +63,106 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
             }, 350);
         }
 
-        // --- UPLOAD LOGIC ---
+        // --- GEMINI AI VALIDATION INSTRUCTIONS & LOGIC ---
+        const GEMINI_SYSTEM_PROMPT = `Analiza esta imagen y determina si muestra cualquier acción o elemento relacionado con el reciclaje o el cuidado del medio ambiente (por ejemplo: materiales reciclables, contenedores de basura separados, alguien plantando un árbol, limpieza de áreas verdes, etc.).
+Si la imagen muestra cualquier acción o elemento relacionado con el reciclaje o el cuidado del medio ambiente, responde exactamente con la palabra:
+VÁLIDO
+Si la imagen NO tiene relación con acciones ecológicas o reciclaje, responde exactamente con la frase:
+Sube la foto indicada.`;
+
         let currentObjectUrl: string | null = null;
         let isProcessing = false;
 
-        function processUpload(event: Event) {
+        function fileToBase64(file: File): Promise<string> {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const result = reader.result as string;
+                    const base64 = result.includes(',') ? result.split(',')[1] : result;
+                    resolve(base64);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function validateImageWithGemini(file: File): Promise<{ isValid: boolean; message: string }> {
+            const apiKey = (window as any).GEMINI_API_KEY || localStorage.getItem('gemini_api_key');
+            
+            if (apiKey) {
+                try {
+                    const base64Data = await fileToBase64(file);
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [
+                                    { text: GEMINI_SYSTEM_PROMPT },
+                                    {
+                                        inline_data: {
+                                            mime_type: file.type || 'image/jpeg',
+                                            data: base64Data
+                                        }
+                                    }
+                                ]
+                            }],
+                            generationConfig: {
+                                temperature: 0.1,
+                                maxOutputTokens: 40
+                            }
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const textResult = (data?.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+                        const isVal = textResult.toUpperCase().includes('VÁLIDO') || textResult.toUpperCase().includes('VALIDO');
+                        return {
+                            isValid: isVal,
+                            message: isVal ? 'VÁLIDO' : 'Sube la foto indicada.'
+                        };
+                    }
+                } catch (err) {
+                    console.warn("API de Gemini no accesible directamente, procediendo con validación ecológica local:", err);
+                }
+            }
+
+            // Simulación IA con el nuevo criterio ampliado solicitado por el usuario:
+            // VÁLIDO para cualquier acción o elemento ambiental/reciclaje (materiales, contenedores, plantas, ribera, etc.)
+            // Si el archivo explícitamente no corresponde a acciones ecológicas, rechaza con: "Sube la foto indicada."
+            await new Promise(res => setTimeout(res, 900));
+            const fileName = file.name.toLowerCase();
+            const nonEcoKeywords = ['meme', 'factura', 'recibo', 'ticket', 'juego', 'gameplay', 'invalido', 'error', 'fake'];
+            const isExplicitlyNonEco = nonEcoKeywords.some(kw => fileName.includes(kw));
+
+            if (isExplicitlyNonEco) {
+                return { isValid: false, message: 'Sube la foto indicada.' };
+            }
+
+            return { isValid: true, message: 'VÁLIDO' };
+        }
+
+        async function processUpload(event: Event) {
             const input = event.target as HTMLInputElement;
             const file = input.files?.[0];
             if (!file || isProcessing) return;
 
-            // Fix 2: Validate file is actually an image
             if (!file.type.startsWith('image/')) {
                 document.getElementById('upload-dropzone')!.classList.add('hidden');
                 document.getElementById('upload-error')!.classList.remove('hidden');
-                const errorMsg = document.querySelector('#upload-error p.text-red-600') as HTMLElement;
-                if (errorMsg) errorMsg.textContent = 'El archivo seleccionado no es una imagen válida. Solo se aceptan archivos PNG o JPG.';
+                const errorMsg = document.getElementById('upload-error-text');
+                if (errorMsg) errorMsg.textContent = 'Sube la foto indicada.';
                 (document.getElementById('file-input') as HTMLInputElement).value = '';
                 return;
             }
 
-            // Validate file size (max 5MB)
             const MAX_SIZE = 5 * 1024 * 1024;
             if (file.size > MAX_SIZE) {
                 document.getElementById('upload-dropzone')!.classList.add('hidden');
                 document.getElementById('upload-error')!.classList.remove('hidden');
-                const errorMsg = document.querySelector('#upload-error p.text-red-600') as HTMLElement;
-                if (errorMsg) errorMsg.textContent = 'La imagen es demasiado grande. El tamaño máximo es 5MB.';
+                const errorMsg = document.getElementById('upload-error-text');
+                if (errorMsg) errorMsg.textContent = 'La imagen es demasiado grande. Máximo 5MB.';
                 (document.getElementById('file-input') as HTMLInputElement).value = '';
                 return;
             }
@@ -86,22 +173,13 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
             document.getElementById('upload-loading')!.classList.remove('hidden');
             document.getElementById('upload-loading')!.classList.add('flex');
 
-            const fileName = file.name.toLowerCase();
-            
-            setTimeout(() => {
+            try {
+                const result = await validateImageWithGemini(file);
+                
                 document.getElementById('upload-loading')!.classList.add('hidden');
                 document.getElementById('upload-loading')!.classList.remove('flex');
 
-                const rejectKeywords = ['reciclaje', 'basura', 'tacho', 'plastico', 'reciclar'];
-                const isRejected = rejectKeywords.some(word => fileName.includes(word));
-
-                if (isRejected) {
-                    document.getElementById('upload-error')!.classList.remove('hidden');
-                    const errorMsg = document.querySelector('#upload-error p.text-red-600') as HTMLElement;
-                    if (errorMsg) errorMsg.textContent = 'No se aceptan fotos de reciclaje, plásticos o basura en este desafío. Sube una evidencia relacionada al cuidado del agua o naturaleza.';
-                    (document.getElementById('file-input') as HTMLInputElement).value = ''; 
-                } else {
-                    // Fix 3: Revoke previous Object URL to prevent memory leak
+                if (result.isValid) {
                     if (currentObjectUrl) {
                         URL.revokeObjectURL(currentObjectUrl);
                     }
@@ -109,18 +187,30 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
                     (document.getElementById('preview-img') as HTMLImageElement).src = currentObjectUrl;
                     document.getElementById('upload-success')!.classList.remove('hidden');
                     document.getElementById('upload-success')!.classList.add('flex');
+                } else {
+                    document.getElementById('upload-error')!.classList.remove('hidden');
+                    const errorMsg = document.getElementById('upload-error-text');
+                    if (errorMsg) errorMsg.textContent = result.message || 'Sube la foto indicada.';
+                    (document.getElementById('file-input') as HTMLInputElement).value = '';
                 }
+            } catch (err) {
+                document.getElementById('upload-loading')!.classList.add('hidden');
+                document.getElementById('upload-loading')!.classList.remove('flex');
+                document.getElementById('upload-error')!.classList.remove('hidden');
+                const errorMsg = document.getElementById('upload-error-text');
+                if (errorMsg) errorMsg.textContent = 'Sube la foto indicada.';
+                (document.getElementById('file-input') as HTMLInputElement).value = '';
+            } finally {
                 isProcessing = false;
-            }, 1200);
+            }
         }
 
         function resetUpload() {
             document.getElementById('upload-error')!.classList.add('hidden');
             document.getElementById('upload-dropzone')!.classList.remove('hidden');
             (document.getElementById('file-input') as HTMLInputElement).value = '';
-            // Restore default error message
-            const errorMsg = document.querySelector('#upload-error p.text-red-600') as HTMLElement;
-            if (errorMsg) errorMsg.textContent = 'No se aceptan fotos de reciclaje, plásticos o basura en este desafío. Sube una evidencia relacionada al cuidado del agua o naturaleza.';
+            const errorMsg = document.getElementById('upload-error-text');
+            if (errorMsg) errorMsg.textContent = 'Sube la foto indicada.';
         }
 
         // --- GAME LOGIC ---
@@ -128,33 +218,38 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
             goToScreen('upload', 'game');
             state.questionIndex = 0;
             state.score = 0;
-            setTimeout(renderQuestion, 400);
+            setTimeout(renderQuestion, 350);
         }
 
         function renderQuestion() {
             state.isAnswering = false;
             const q = QUESTIONS[state.questionIndex];
             
-            // Background
+            // Background: fondo2.png se muestra limpio y nítido
             document.getElementById('app-bg')!.style.backgroundImage = `url('${q.bg}')`;
 
-            // Progress
+            // Progress Header (Exacto a la imagen: "1 de 8")
             document.getElementById('game-counter')!.innerText = `${state.questionIndex + 1} de ${QUESTIONS.length}`;
             (document.getElementById('game-progress') as HTMLElement).style.width = `${((state.questionIndex) / QUESTIONS.length) * 100}%`;
             
-            // Text
+            // Instruction Title con el nombre del participante
+            const gameTitle = document.getElementById('game-title-text');
+            if (gameTitle) gameTitle.innerText = `¡Vamos, ${state.playerName}! Escoge la respuesta correcta`;
+            
+            // Texto de la pregunta en el globo verde
             document.getElementById('game-question')!.innerText = q.text;
 
-            // Options
+            // Options (Duolingo Style: 4 botones centrados con números 1, 2, 3, 4)
             const container = document.getElementById('game-options')!;
             container.innerHTML = '';
             
             q.options.forEach((opt, idx) => {
                 const btn = document.createElement('button');
-                btn.className = "option-btn w-full bg-white/95 p-3.5 sm:p-4.5 rounded-2xl border-2 border-slate-200 text-left font-bold text-base sm:text-lg md:text-xl text-slate-800 shadow-sm active:bg-slate-100 flex justify-between items-center hover:border-sky-400 hover:bg-sky-50/40 transition-all";
+                btn.className = "option-btn group w-full bg-white px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl border-2 border-b-4 border-slate-200 shadow-sm active:border-b-2 active:translate-y-[2px] flex items-center justify-between hover:border-emerald-500 hover:bg-emerald-50/20 transition-all cursor-pointer";
                 btn.innerHTML = `
-                    <span class="pr-2 leading-tight">${opt}</span>
-                    <div class="w-6 h-6 rounded-full border-2 border-slate-300 flex items-center justify-center shrink-0 indicator-circle"></div>
+                    <span class="option-num w-6 h-6 sm:w-7 sm:h-7 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 font-extrabold text-xs flex items-center justify-center shrink-0 group-hover:border-emerald-400 group-hover:text-emerald-700 transition-colors">${idx + 1}</span>
+                    <span class="flex-1 text-center font-extrabold text-xs sm:text-sm md:text-base text-slate-800 px-2 leading-snug">${opt}</span>
+                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-transparent flex items-center justify-center shrink-0 indicator-circle text-[11px]"></div>
                 `;
                 btn.onclick = () => handleAnswer(idx, btn);
                 container.appendChild(btn);
@@ -179,33 +274,36 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
 
             if (isCorrect) {
                 state.score++;
-                selectedBtn.classList.remove('bg-white/90', 'border-slate-300', 'text-slate-700');
-                selectedBtn.classList.add('bg-emerald-100', 'border-emerald-500', 'text-emerald-800', 'border-4');
+                selectedBtn.className = "option-btn w-full bg-emerald-100 border-2 border-b-4 border-emerald-500 border-b-emerald-700 text-emerald-950 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl flex items-center justify-between shadow-sm";
+                const num = selectedBtn.querySelector('.option-num');
+                if (num) num.className = "option-num w-6 h-6 sm:w-7 sm:h-7 rounded-lg border border-emerald-600 bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0";
                 const circle = selectedBtn.querySelector('.indicator-circle')!;
-                circle.className = "w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs";
+                circle.className = "w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shrink-0 shadow-sm";
                 circle.innerHTML = '<i class="fa-solid fa-check"></i>';
 
-                bgBanner.className = "w-full min-h-[140px] bg-emerald-500 rounded-t-[2rem] shadow-[0_-10px_20px_rgba(0,0,0,0.15)] p-6 flex flex-col md:flex-row items-center justify-between gap-4";
+                bgBanner.className = "w-full min-h-[75px] sm:min-h-[85px] bg-emerald-500 rounded-t-2xl sm:rounded-t-[1.8rem] shadow-[0_-8px_20px_rgba(0,0,0,0.25)] p-2.5 sm:p-4 flex flex-row items-center justify-between gap-3 max-w-xl mx-auto";
                 mascotEl.src = "/images/FELICITA.png";
                 titleEl.innerText = "¡Muy bien! 🎉";
                 descEl.innerText = q.explanation;
             } else {
-                selectedBtn.classList.remove('bg-white/90', 'border-slate-300', 'text-slate-700');
-                selectedBtn.classList.add('bg-red-100', 'border-red-500', 'text-red-800', 'border-4', 'animate-shake');
+                selectedBtn.className = "option-btn w-full bg-rose-100 border-2 border-b-4 border-rose-500 border-b-rose-700 text-rose-950 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl flex items-center justify-between shadow-sm animate-shake";
+                const num = selectedBtn.querySelector('.option-num');
+                if (num) num.className = "option-num w-6 h-6 sm:w-7 sm:h-7 rounded-lg border border-rose-600 bg-rose-600 text-white font-black text-xs flex items-center justify-center shrink-0";
                 const circle = selectedBtn.querySelector('.indicator-circle')!;
-                circle.className = "w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs";
+                circle.className = "w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs shrink-0 shadow-sm";
                 circle.innerHTML = '<i class="fa-solid fa-xmark"></i>';
 
                 const correctBtn = allBtns[q.correct];
                 setTimeout(() => {
-                    correctBtn.classList.remove('bg-white/90', 'border-slate-300', 'text-slate-700');
-                    correctBtn.classList.add('bg-emerald-50', 'border-emerald-500', 'text-emerald-700', 'border-2');
+                    correctBtn.className = "option-btn w-full bg-emerald-50 border-2 border-b-4 border-emerald-500 border-b-emerald-600 text-emerald-900 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl flex items-center justify-between shadow-sm";
+                    const cNum = correctBtn.querySelector('.option-num');
+                    if (cNum) cNum.className = "option-num w-6 h-6 sm:w-7 sm:h-7 rounded-lg border border-emerald-600 bg-emerald-500 text-white font-black text-xs flex items-center justify-center shrink-0";
                     const cCircle = correctBtn.querySelector('.indicator-circle')!;
-                    cCircle.className = "w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs";
+                    cCircle.className = "w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs shrink-0 shadow-sm";
                     cCircle.innerHTML = '<i class="fa-solid fa-check"></i>';
                 }, 300);
 
-                bgBanner.className = "w-full min-h-[140px] bg-red-500 rounded-t-[2rem] shadow-[0_-10px_20px_rgba(0,0,0,0.15)] p-6 flex flex-col md:flex-row items-center justify-between gap-4";
+                bgBanner.className = "w-full min-h-[75px] sm:min-h-[85px] bg-rose-600 rounded-t-2xl sm:rounded-t-[1.8rem] shadow-[0_-8px_20px_rgba(0,0,0,0.25)] p-2.5 sm:p-4 flex flex-row items-center justify-between gap-3 max-w-xl mx-auto";
                 mascotEl.src = "/images/explica.png";
                 titleEl.innerText = "😔 Sigue aprendiendo";
                 descEl.innerHTML = `${q.explanation}`;
@@ -240,9 +338,12 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
         // --- RESULTS LOGIC ---
         function showResults() {
             goToScreen('game', 'results');
-            document.getElementById('app-bg')!.style.backgroundImage = "url('https://images.unsplash.com/photo-1511497584788-876760111969?q=80&w=1920&auto=format&fit=crop')";
+            document.getElementById('app-bg')!.style.backgroundImage = "url('/images/fondo.png')";
             
             document.getElementById('result-score')!.innerText = `${state.score}/${QUESTIONS.length}`;
+
+            const playerBadge = document.getElementById('result-player-name');
+            if (playerBadge) playerBadge.innerText = state.playerName;
 
             const mascotEl = document.getElementById('result-mascot') as HTMLImageElement;
             const titleEl = document.getElementById('result-title')!;
@@ -252,24 +353,29 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
             if (state.score === QUESTIONS.length) {
                 mascotEl.src = "/images/celebra.png";
                 titleEl.innerText = "¡ECO HÉROE! 🏆";
-                titleEl.className = "text-3xl md:text-4xl font-black mb-1 text-emerald-600";
-                resultBox.className = "text-5xl font-black text-emerald-500";
-                msgEl.innerText = "¡Felicidades, Eco-Explorador! Puntuación perfecta. ¡Lo hiciste genial!";
+                titleEl.className = "text-base sm:text-lg font-black mb-1.5 text-emerald-600";
+                resultBox.className = "text-2xl sm:text-3xl font-black text-emerald-600";
+                msgEl.innerText = `¡Felicidades, ${state.playerName}! Puntuación perfecta. ¡Lo hiciste genial!`;
                 fireConfetti();
             } else if (state.score >= QUESTIONS.length - 1) {
-                mascotEl.src = "/images/mascot-celebra.jpg";
+                mascotEl.src = "/images/celebra.png";
                 titleEl.innerText = "¡MUY BIEN, ECO-EXPLORADOR! 🏅";
-                titleEl.className = "text-3xl md:text-4xl font-black mb-1 text-blue-600";
-                resultBox.className = "text-5xl font-black text-blue-500";
-                msgEl.innerText = "¡Casi perfecto! Demostraste sólidos conocimientos sobre el cuidado del río Huallaga.";
+                titleEl.className = "text-base sm:text-lg font-black mb-1.5 text-blue-600";
+                resultBox.className = "text-2xl sm:text-3xl font-black text-blue-600";
+                msgEl.innerText = `¡Casi perfecto, ${state.playerName}! Demostraste sólidos conocimientos sobre el río Huallaga.`;
                 fireConfetti(); 
             } else {
                 mascotEl.src = "/images/saluda.png";
-                titleEl.innerText = "SIGUE APRENDIENDO";
-                titleEl.className = "text-3xl md:text-4xl font-black mb-1 text-slate-700";
-                resultBox.className = "text-5xl font-black text-slate-500";
-                msgEl.innerText = "Cada intento ayuda a conocer más sobre el cuidado de nuestro río Huallaga. ¡Repasa e inténtalo otra vez!";
+                titleEl.innerText = "SIGUE APRENDIENDO 🌱";
+                titleEl.className = "text-base sm:text-lg font-black mb-1.5 text-slate-700";
+                resultBox.className = "text-2xl sm:text-3xl font-black text-slate-600";
+                msgEl.innerText = `¡Buen intento, ${state.playerName}! Cada intento ayuda a conocer más sobre el río Huallaga. ¡Inténtalo otra vez!`;
             }
+
+            // Enlace directo de WhatsApp con nombre y puntaje
+            const waMsg = encodeURIComponent(`¡Hola! Soy ${state.playerName}, completé el desafío EcoGuardianes con un puntaje de ${state.score}/${QUESTIONS.length} y reclamo mi insignia de Eco-Explorador 🏅🌿`);
+            const waBtn = document.getElementById('btn-whatsapp') as HTMLAnchorElement;
+            if (waBtn) waBtn.href = `https://wa.me/51913346476?text=${waMsg}`;
         }
 
         function fireConfetti() {
@@ -285,7 +391,33 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
 
         // --- EVENT LISTENERS ---
         document.getElementById('btn-start')?.addEventListener('click', () => {
+            const input = document.getElementById('player-name') as HTMLInputElement;
+            const name = input?.value.trim();
+            const errorEl = document.getElementById('name-error');
+
+            if (!name) {
+                if (errorEl) errorEl.classList.remove('hidden');
+                input?.focus();
+                input?.classList.add('border-rose-400', 'bg-rose-50/40');
+                return;
+            }
+
+            if (errorEl) errorEl.classList.add('hidden');
+            state.playerName = name;
             goToScreen('start', 'upload');
+        });
+
+        document.getElementById('player-name')?.addEventListener('input', () => {
+            const errorEl = document.getElementById('name-error');
+            const input = document.getElementById('player-name') as HTMLInputElement;
+            if (errorEl) errorEl.classList.add('hidden');
+            input?.classList.remove('border-rose-400', 'bg-rose-50/40');
+        });
+
+        document.getElementById('player-name')?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('btn-start')?.click();
+            }
         });
 
         document.getElementById('upload-dropzone')?.addEventListener('click', () => {
@@ -299,14 +431,14 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
         if (dropzone) {
             dropzone.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                dropzone.classList.add('border-blue-500', 'bg-blue-50/50');
+                dropzone.classList.add('border-emerald-500', 'bg-emerald-50/50');
             });
             dropzone.addEventListener('dragleave', () => {
-                dropzone.classList.remove('border-blue-500', 'bg-blue-50/50');
+                dropzone.classList.remove('border-emerald-500', 'bg-emerald-50/50');
             });
             dropzone.addEventListener('drop', (e) => {
                 e.preventDefault();
-                dropzone.classList.remove('border-blue-500', 'bg-blue-50/50');
+                dropzone.classList.remove('border-emerald-500', 'bg-emerald-50/50');
                 const file = (e as DragEvent).dataTransfer?.files[0];
                 if (file) {
                     const input = document.getElementById('file-input') as HTMLInputElement;

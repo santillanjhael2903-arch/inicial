@@ -1,40 +1,46 @@
 ---
 ---
 
-<section id="screen-game" class="relative z-10 w-full h-full hidden flex-col justify-between pt-6 pb-0">
+<section id="screen-game" class="relative z-10 w-full h-full max-h-[100dvh] hidden flex-col justify-between pt-2 sm:pt-3.5 pb-20 sm:pb-24 px-3 sm:px-6 select-none">
     
-    <!-- Header Progress -->
-    <div class="w-[90%] max-w-2xl mx-auto flex items-center gap-4 bg-white/95 backdrop-blur-sm p-4 rounded-2xl shadow-md">
-        <i id="btn-close-game" class="fa-solid fa-xmark text-slate-400 text-xl cursor-pointer hover:text-slate-600"></i>
-        <div class="flex-1 h-4 bg-slate-200 rounded-full overflow-hidden">
-            <div id="game-progress" class="h-full bg-emerald-500 rounded-full transition-all duration-500 w-0"></div>
+    <!-- Top Header Progress (Exact Duolingo capsule as in reference screenshot) -->
+    <div class="w-full max-w-sm sm:max-w-md mx-auto flex items-center gap-2.5 bg-white/95 backdrop-blur-sm rounded-full px-3.5 py-1.5 shadow-sm border border-slate-200/80 mt-1">
+        <button id="btn-close-game" aria-label="Cerrar juego" class="text-slate-400 hover:text-slate-700 text-base p-0.5 transition-colors flex items-center justify-center font-bold">
+            <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+        <div class="flex-1 h-2 sm:h-2.5 bg-slate-200/90 rounded-full overflow-hidden">
+            <div id="game-progress" class="h-full bg-emerald-500 rounded-full transition-all duration-300 w-0"></div>
         </div>
-        <span id="game-counter" class="font-black text-emerald-600">1/8</span>
+        <span id="game-counter" class="font-extrabold text-xs sm:text-sm text-emerald-600 shrink-0">1 de 8</span>
     </div>
 
-    <!-- Question Area (Duolingo Style: Mascot on the side + Speech Bubble) -->
-    <div class="w-[90%] max-w-2xl mx-auto flex-1 flex flex-col justify-center gap-4 overflow-y-auto py-3">
-        <div class="flex items-end gap-3 sm:gap-4 w-full">
-            <!-- Mascota al costado -->
-            <div class="shrink-0 flex flex-col items-center">
-                <img src="/images/pensativo.png" alt="Bagre pensativo" class="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-contain drop-shadow-xl animate-bounce-subtle">
+    <!-- Main Game Canvas (Duolingo Layout: Title + Mascot & Green Speech Bubble + Centered Options) -->
+    <div class="w-full max-w-md mx-auto flex-1 flex flex-col justify-center gap-2.5 sm:gap-3 my-auto py-1">
+        
+        <!-- Duolingo Instruction Title with Bullet Dot (Matching reference screenshot) -->
+        <h2 class="text-xs sm:text-sm md:text-base font-extrabold text-[#0f3057] text-center tracking-tight flex items-center justify-center gap-1.5">
+            <span class="text-emerald-500 font-black text-base">•</span>
+            <span id="game-title-text">¡Vamos, Eco-Explorador! Escoge la respuesta correcta</span>
+        </h2>
+
+        <!-- Mascot & Speech Bubble Scene (Exact layout from user screenshot) -->
+        <div class="flex items-center gap-2.5 sm:gap-3.5 w-full justify-center">
+            <!-- Mascota con sombrero de explorador -->
+            <div class="shrink-0 flex items-center justify-center">
+                <img src="/images/pensativo.png" alt="Bagre explorador" class="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-contain drop-shadow-md">
             </div>
 
-            <!-- Globo de diálogo estilo Duolingo con alto contraste al verde -->
-            <div class="relative flex-1 bg-white/95 backdrop-blur-md p-5 sm:p-6 rounded-[2rem] rounded-bl-sm border-2 border-sky-400 shadow-[0_8px_25px_-5px_rgba(14,165,233,0.3)]">
-                <!-- Flecha/piquito apuntando a la mascota -->
-                <div class="absolute -left-2.5 bottom-4 w-0 h-0 border-t-[8px] border-t-transparent border-r-[12px] border-r-white border-b-[8px] border-b-transparent"></div>
+            <!-- Globo de diálogo VERDE Duolingo con piquito apuntando a la izquierda -->
+            <div class="relative flex-1 bg-[#008f5d] text-white py-3 px-3.5 sm:py-4 sm:px-4 rounded-2xl rounded-bl-sm shadow-md border border-emerald-700">
+                <!-- Piquito que conecta con la mascota -->
+                <div class="absolute -left-2 bottom-3.5 w-0 h-0 border-t-[6px] border-t-transparent border-r-[8px] border-r-[#008f5d] border-b-[6px] border-b-transparent"></div>
                 
-                <div class="flex items-center gap-2 mb-1.5">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-black bg-sky-100 text-sky-800 tracking-wider uppercase border border-sky-300">
-                        <i class="fa-solid fa-cloud-sun text-sky-600 mr-1.5"></i> Pregunta Eco-Explorador
-                    </span>
-                </div>
-                <h2 id="game-question" class="text-xl sm:text-2xl md:text-2xl font-black text-blue-950 leading-snug tracking-tight drop-shadow-sm">¿Pregunta?</h2>
+                <h3 id="game-question" class="text-xs sm:text-sm md:text-base font-extrabold text-white leading-snug">¿Pregunta?</h3>
             </div>
         </div>
         
-        <div id="game-options" class="flex flex-col gap-2.5 sm:gap-3">
+        <!-- Options container (4 centered white cards with numbers 1, 2, 3, 4) -->
+        <div id="game-options" class="flex flex-col gap-2 sm:gap-2.5 w-full">
             <!-- Options injected via JS -->
         </div>
     </div>

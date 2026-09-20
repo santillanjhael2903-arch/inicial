@@ -1,32 +1,39 @@
 ---
 ---
 
-<section id="screen-results" class="relative z-10 w-[90%] max-w-lg glass-panel rounded-[2.5rem] p-8 text-center hidden flex-col items-center">
-    <img id="result-mascot" src="/images/celebra.png" alt="Celebrando" class="w-28 h-28 object-contain mb-2 drop-shadow-md">
-    <h2 id="result-title" class="text-4xl font-black text-slate-800 mb-1">ECO HÉROE</h2>
+<section id="screen-results" class="relative z-10 w-[92%] max-w-md glass-panel rounded-3xl p-4 sm:p-6 text-center hidden flex-col items-center max-h-[96dvh]">
+    <img id="result-mascot" src="/images/celebra.png" alt="Celebrando" class="w-16 h-16 sm:w-20 sm:h-20 object-contain mb-1 drop-shadow-md">
     
-    <div class="my-4 w-full bg-white/60 rounded-2xl p-4 border border-slate-200">
-        <p class="text-slate-500 font-bold text-sm uppercase tracking-wider mb-1">Puntuación Final</p>
-        <div class="text-5xl font-black text-emerald-500" id="result-score">8/8</div>
+    <!-- Player Name Display (Prominente y Claro) -->
+    <div class="mb-1">
+        <span class="text-[11px] uppercase font-black tracking-wider text-slate-500 block">Eco-Explorador Participante</span>
+        <div id="result-player-name" class="text-xl sm:text-2xl font-black text-emerald-800 leading-tight">Nombre</div>
     </div>
 
-    <p id="result-msg" class="text-slate-600 font-bold mb-4 text-base">
-        ¡Felicidades! Has completado el desafío.
+    <h2 id="result-title" class="text-base sm:text-lg font-black text-emerald-600 mb-1.5">¡ECO HÉROE! 🏆</h2>
+    
+    <!-- Puntuación Compacta Horizontal -->
+    <div class="w-full bg-white/85 rounded-xl py-1.5 px-4 border border-slate-200 shadow-sm flex items-center justify-between mb-1.5">
+        <span class="text-xs font-black text-slate-500 uppercase tracking-wide">Puntuación Final:</span>
+        <span class="text-2xl sm:text-3xl font-black text-emerald-600" id="result-score">8/8</span>
+    </div>
+
+    <p id="result-msg" class="text-slate-600 font-semibold mb-2 text-xs sm:text-sm leading-snug">
+        ¡Felicidades! Has completado el desafío ambiental.
     </p>
 
-    <!-- WhatsApp CTA -->
-    <div class="w-full bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 mb-4 text-left">
-        <p class="text-slate-700 text-sm font-semibold">
-            📸 Toma una captura de tu puntaje y envíala por WhatsApp al <strong class="text-emerald-600">913346476</strong> para registrar tu participación y reclamar tu insignia de Eco-Explorador.
+    <!-- WhatsApp CTA (Recordatorio de las 2 capturas) -->
+    <div class="w-full bg-emerald-50 border border-emerald-300 rounded-xl p-2.5 mb-2.5 text-left shadow-sm">
+        <p class="text-slate-700 text-[11px] sm:text-xs font-bold leading-tight">
+            📸 <span class="text-emerald-800 font-black">Envía tus 2 capturas:</span> Toma captura de este puntaje y envíala junto a la captura de tu foto por WhatsApp al <strong class="text-emerald-700 font-black">913346476</strong> para registrarte y reclamar tu Insignia.
         </p>
-        <p class="text-slate-500 text-xs mt-2 font-semibold">¡Sigue explorando, aprendiendo y cuidando nuestro río Huallaga! 🏅</p>
     </div>
 
-    <a href="https://wa.me/51913346476?text=¡Hola!%20Completé%20el%20desafío%20EcoGuardianes%20🌎" target="_blank" rel="noopener noreferrer" class="w-full bg-[#25D366] hover:bg-[#1fb855] text-white font-black text-lg py-4 rounded-2xl shadow-[0_8px_0_rgb(18,140,75)] active:shadow-[0_0px_0_rgb(18,140,75)] active:translate-y-2 transition-all flex justify-center items-center gap-3 mb-3">
-        <i class="fa-brands fa-whatsapp text-2xl"></i> Enviar por WhatsApp
+    <a id="btn-whatsapp" href="https://wa.me/51913346476?text=¡Hola!%20Completé%20el%20desafío%20EcoGuardianes%20🌎" target="_blank" rel="noopener noreferrer" class="w-full bg-[#25D366] hover:bg-[#1fb855] text-white font-black text-sm sm:text-base py-2.5 sm:py-3 rounded-xl border-b-4 border-emerald-700 shadow-sm active:border-b-2 active:translate-y-1 transition-all flex justify-center items-center gap-2 mb-2">
+        <i class="fa-brands fa-whatsapp text-lg sm:text-xl"></i> Enviar por WhatsApp
     </a>
 
-    <button id="btn-restart" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black text-lg py-4 rounded-2xl shadow-[0_8px_0_rgb(15,23,42)] active:shadow-[0_0px_0_rgb(15,23,42)] active:translate-y-2 transition-all flex justify-center items-center gap-2">
+    <button id="btn-restart" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black text-xs sm:text-sm py-2 sm:py-2.5 rounded-xl border-b-4 border-slate-950 shadow-sm active:border-b-2 active:translate-y-1 transition-all flex justify-center items-center gap-2">
         <i class="fa-solid fa-rotate-left"></i> Volver al inicio
     </button>
 </section>
