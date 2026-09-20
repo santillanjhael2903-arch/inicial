@@ -109,25 +109,23 @@ Sube la foto indicada.`;
         // Precarga temprana
         setTimeout(() => { getMobileNet(); }, 1000);
 
-        // Lista de conceptos ecológicos y de reciclaje reconocidos
-        const ECO_KEYWORDS = [
-            'bottle', 'plastic', 'can', 'tin', 'ashcan', 'trash', 'waste', 'garbage', 'bin',
-            'cup', 'bucket', 'barrel', 'tub', 'carton', 'crate', 'paper', 'cardboard', 'container',
-            'jug', 'water bottle', 'pop bottle', 'beer bottle', 'wine bottle', 'pill bottle',
-            'tree', 'plant', 'flowerpot', 'pot', 'garden', 'park', 'grass', 'lawn', 'river',
-            'lake', 'stream', 'seashore', 'water', 'leaf', 'forest', 'valley', 'nature',
-            'soil', 'earth', 'ground', 'dirt', 'sprout', 'lakeside', 'alp', 'cliff', 'promontory',
-            'shovel', 'watering can', 'broom', 'glove', 'flower', 'daisy', 'wood', 'outdoor',
-            'recicl', 'basura', 'tacho', 'rio', 'huallaga', 'ecologia', 'cayhuaynita'
+        // Lista estricta de objetos y elementos genuinamente ecológicos o de reciclaje
+        const GENUINE_ECO_CLASSES = [
+            'water bottle', 'pop bottle', 'soda bottle', 'beer bottle', 'wine bottle', 'pill bottle',
+            'water jug', 'plastic bag', 'ashcan', 'trash can', 'garbage can', 'wastebin', 'dustbin',
+            'trash barrel', 'trash bin', 'tree', 'plant', 'flowerpot', 'garden', 'park', 'lawn',
+            'river', 'lake', 'stream', 'seashore', 'lakeside', 'forest', 'valley', 'soil',
+            'earth', 'ground', 'dirt', 'shovel', 'watering can', 'wheelbarrow'
         ];
 
-        // Conceptos que definitivamente NO son ecológicos (personas, pantallas, muebles, etc.)
-        const NON_ECO_PREDICTIONS = [
-            'cellular telephone', 'cellphone', 'mobile phone', 'television', 'monitor', 'screen',
-            'laptop', 'computer', 'notebook', 'keyboard', 'mouse', 'desk', 'suit', 'jersey',
-            't-shirt', 'jean', 'pajama', 'wallet', 'purse', 'car', 'automobile', 'cat', 'dog',
-            'pizza', 'dining table', 'couch', 'studio couch', 'sofa', 'pillow', 'wardrobe',
-            'bed', 'shoe', 'sandal', 'boot'
+        // Conceptos que indican explícitamente gráficos, texto, personas, ropa o interiores (NO ambientales)
+        const NON_ECO_CLASSES = [
+            'comic book', 'book jacket', 'web site', 'menu', 'envelope', 'packet', 'poster',
+            'scoreboard', 'jersey', 'cardigan', 'sweater', 'necktie', 'bow tie', 'suit',
+            'spectacles', 'sunglasses', 'wig', 'pajama', 't-shirt', 'jean', 'cellular telephone',
+            'cellphone', 'screen', 'monitor', 'television', 'laptop', 'computer', 'notebook',
+            'keyboard', 'mouse', 'desk', 'dining table', 'couch', 'sofa', 'wardrobe', 'bed',
+            'car', 'automobile', 'cat', 'dog', 'pizza', 'handkerchief'
         ];
 
         async function validateImageWithGemini(file: File): Promise<{ isValid: boolean; message: string }> {
@@ -173,7 +171,7 @@ Sube la foto indicada.`;
                 }
             }
 
-            // 2. Análisis real en el navegador mediante Computer Vision (TensorFlow MobileNet)
+            // 2. Análisis real en el navegador mediante Computer Vision
             try {
                 const imgElement = new Image();
                 const tempUrl = URL.createObjectURL(file);
@@ -183,11 +181,46 @@ Sube la foto indicada.`;
                     imgElement.src = tempUrl;
                 });
 
+                // Detección en Canvas: Detección de pósters, infografías, viñetas de texto y dibujos planos
+                // (Evita que folletos, viñetas de diálogo o dibujos con verde como 'Classroom Phrases' pasen por error)
+                const canvas = document.createElement('canvas');
+                canvas.width = 100;
+                canvas.height = 100;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(imgElement, 0, 0, 100, 100);
+                    const imgData = ctx.getImageData(0, 0, 100, 100).data;
+                    let whiteCount = 0;
+                    let skinCount = 0;
+                    const totalPixels = 100 * 100;
+
+                    for (let i = 0; i < imgData.length; i += 4) {
+                        const r = imgData[i];
+                        const g = imgData[i + 1];
+                        const b = imgData[i + 2];
+
+                        // Globos de diálogo / fondos blancos de documentos / viñetas
+                        if (r > 225 && g > 225 && b > 225) whiteCount++;
+                        // Detección de tonos de piel predominantes (personas / selfies de cerca)
+                        else if (r > 120 && g > 80 && b > 60 && r > g && g > b && (r - g) > 15) skinCount++;
+                    }
+
+                    const whiteRatio = whiteCount / totalPixels;
+                    const skinRatio = skinCount / totalPixels;
+
+                    // Si tiene un alto porcentaje de blanco por globos de diálogo/texto o es selfie de cerca
+                    if (whiteRatio > 0.18 || skinRatio > 0.35) {
+                        URL.revokeObjectURL(tempUrl);
+                        console.log("Rechazado por ser póster/infografía/dibujo o selfie:", { whiteRatio, skinRatio });
+                        return { isValid: false, message: 'Sube la foto indicada.' };
+                    }
+                }
+
+                // Clasificación estricta con MobileNet (buscar objetos ambientales/reciclaje)
                 const model = await getMobileNet();
                 if (model) {
-                    const predictions = await model.classify(imgElement, 5);
+                    const predictions = await model.classify(imgElement, 6);
                     URL.revokeObjectURL(tempUrl);
-                    
                     console.log("Predicciones IA MobileNet:", predictions);
 
                     let ecoScore = 0;
@@ -197,71 +230,36 @@ Sube la foto indicada.`;
                         const label = pred.className.toLowerCase();
                         const prob = pred.probability;
 
-                        const isEco = ECO_KEYWORDS.some(kw => label.includes(kw));
-                        const isNonEco = NON_ECO_PREDICTIONS.some(kw => label.includes(kw));
+                        const isEco = GENUINE_ECO_CLASSES.some(item => label.includes(item));
+                        const isNonEco = NON_ECO_CLASSES.some(item => label.includes(item));
 
                         if (isEco) ecoScore += prob;
                         if (isNonEco) nonEcoScore += prob;
                     }
 
-                    if (ecoScore > 0.15 || (ecoScore > 0.05 && ecoScore >= nonEcoScore)) {
-                        return { isValid: true, message: 'VÁLIDO' };
-                    }
-
-                    if (nonEcoScore > 0.3) {
+                    // Si detecta prendas, pósters, viñetas, personas o pantallas
+                    if (nonEcoScore > 0.15 || (nonEcoScore > 0.05 && nonEcoScore >= ecoScore)) {
+                        console.log("Rechazado por coincidencia con categorías no ecológicas:", { nonEcoScore, ecoScore });
                         return { isValid: false, message: 'Sube la foto indicada.' };
                     }
-                }
 
-                // 3. Análisis de píxeles en Canvas (paleta de colores ambientales vs interiores/selfies)
-                const canvas = document.createElement('canvas');
-                canvas.width = 64;
-                canvas.height = 64;
-                const ctx = canvas.getContext('2d');
-                if (ctx) {
-                    ctx.drawImage(imgElement, 0, 0, 64, 64);
-                    const imgData = ctx.getImageData(0, 0, 64, 64).data;
-                    let greenCount = 0;
-                    let blueCount = 0;
-                    let skinCount = 0;
-                    let totalPixels = 64 * 64;
-
-                    for (let i = 0; i < imgData.length; i += 4) {
-                        const r = imgData[i];
-                        const g = imgData[i + 1];
-                        const b = imgData[i + 2];
-
-                        if (g > 70 && g > r * 1.15 && g > b * 1.1) greenCount++;
-                        else if (b > 80 && b > r * 1.15 && b > g * 0.95) blueCount++;
-                        else if (r > 120 && g > 80 && b > 60 && r > g && g > b && (r - g) > 15) skinCount++;
-                    }
-
-                    const greenRatio = greenCount / totalPixels;
-                    const blueRatio = blueCount / totalPixels;
-                    const skinRatio = skinCount / totalPixels;
-
-                    const fileName = file.name.toLowerCase();
-                    const hasEcoName = ECO_KEYWORDS.some(kw => fileName.includes(kw));
-
-                    if (hasEcoName || greenRatio > 0.12 || (blueRatio > 0.15 && greenRatio > 0.04)) {
+                    // Debe haber detectado con certeza un elemento de reciclaje o medio ambiente
+                    if (ecoScore > 0.15) {
                         return { isValid: true, message: 'VÁLIDO' };
-                    }
-
-                    if (skinRatio > 0.35 || (greenRatio < 0.04 && blueRatio < 0.05)) {
-                        return { isValid: false, message: 'Sube la foto indicada.' };
                     }
                 }
             } catch (err) {
                 console.warn("Fallo en análisis visual local:", err);
             }
 
-            // Fallback por nombre
+            // Fallback por nombre explícito de reciclaje en el archivo
             const fileName = file.name.toLowerCase();
-            const hasEcoName = ['recicl', 'basura', 'tacho', 'rio', 'huallaga', 'arbol', 'planta', 'plastico', 'botella'].some(w => fileName.includes(w));
+            const hasEcoName = ['recicl', 'basura', 'tacho', 'rio_huallaga', 'huallaga', 'arbol_plantado', 'botellas_reciclaje'].some(w => fileName.includes(w));
             if (hasEcoName) {
                 return { isValid: true, message: 'VÁLIDO' };
             }
 
+            // Por defecto, cualquier foto no relacionada (incluyendo imágenes verdes que no son ambientales) se rechaza
             return { isValid: false, message: 'Sube la foto indicada.' };
         }
 
