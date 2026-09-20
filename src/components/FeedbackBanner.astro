@@ -1,18 +1,18 @@
 ---
 ---
 
-<div id="feedback-banner" class="fixed bottom-0 left-0 w-full transform translate-y-full transition-transform duration-300 ease-in-out z-50">
-    <div id="feedback-bg" class="w-full min-h-[75px] sm:min-h-[85px] bg-emerald-500 rounded-t-2xl sm:rounded-t-[1.8rem] shadow-[0_-8px_20px_rgba(0,0,0,0.25)] p-2.5 sm:p-4 flex flex-row items-center justify-between gap-3 max-w-xl mx-auto">
-        <div class="flex items-center gap-2.5 sm:gap-3.5 text-white flex-1 min-w-0">
-            <img id="feedback-mascot" src="/images/FELICITA.png" alt="Mascota" class="w-11 h-11 sm:w-14 sm:h-14 object-contain shrink-0 drop-shadow-md">
+<div id="feedback-banner" class="fixed bottom-1.5 sm:bottom-3 left-0 w-full transform translate-y-full transition-transform duration-300 ease-in-out z-50 pointer-events-none px-3 sm:px-4">
+    <div id="feedback-bg" class="w-full max-w-sm sm:max-w-md mx-auto min-h-[64px] sm:min-h-[72px] bg-emerald-500 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.3)] p-2 sm:p-3 flex flex-row items-center justify-between gap-2.5 pointer-events-auto border-2 border-white/30">
+        <div class="flex items-center gap-2 sm:gap-3 text-white flex-1 min-w-0">
+            <img id="feedback-mascot" src="/images/FELICITA.png" alt="Mascota" class="object-contain shrink-0 drop-shadow-md" style="width: 42px; height: 42px; max-width: 42px; max-height: 42px;">
             <div class="min-w-0 flex-1">
-                <h3 id="feedback-title" class="text-base sm:text-xl font-black leading-tight">¡Muy bien!</h3>
-                <p id="feedback-desc" class="text-xs sm:text-sm font-semibold opacity-95 line-clamp-2 leading-tight">Sigue así.</p>
+                <h3 id="feedback-title" class="text-xs sm:text-sm font-black leading-tight">¡Muy bien!</h3>
+                <p id="feedback-desc" class="text-[10px] sm:text-xs font-bold opacity-95 line-clamp-2 leading-tight">Sigue así.</p>
             </div>
         </div>
-        <!-- Visual indicator of auto-advance -->
-        <div class="bg-white/20 text-white px-2.5 sm:px-3 py-1 rounded-xl font-bold text-[11px] sm:text-xs flex items-center gap-1.5 shrink-0">
-            <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+        <!-- Indicador visual de auto-avance -->
+        <div class="bg-white/25 text-white px-2 py-1 rounded-xl font-black text-[10px] sm:text-xs flex items-center gap-1 shrink-0">
+            <i class="fa-solid fa-spinner fa-spin text-[10px]"></i>
             <span class="hidden xs:inline">Avanzando...</span>
         </div>
     </div>
