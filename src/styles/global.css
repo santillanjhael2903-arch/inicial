@@ -17,12 +17,13 @@ body {
     transition: background-image 0.4s ease-in-out;
 }
 
+/* Glass panel estándar para las pantallas de inicio, subida y resultados */
 .glass-panel {
-    background: rgba(255, 255, 255, 0.88);
+    background: rgba(255, 255, 255, 0.90);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.22);
 }
 
 /* Custom smooth scrollbar for modals */
@@ -69,8 +70,372 @@ body {
 
 @keyframes bounceSubtle {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
+    50% { transform: translateY(-6px); }
 }
 .animate-bounce-subtle {
     animation: bounceSubtle 2.5s ease-in-out infinite;
+}
+
+@keyframes bounceHorizontal {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(8px); }
+}
+.animate-bounce-horizontal {
+    animation: bounceHorizontal 1.8s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(3deg); }
+}
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+/* Efecto de ondas de agua / ripple táctil para niños */
+@keyframes waterRipple {
+    0% {
+        transform: scale(0.4);
+        opacity: 0.9;
+    }
+    100% {
+        transform: scale(1.6);
+        opacity: 0;
+    }
+}
+.animate-water-ripple {
+    animation: waterRipple 1.4s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+
+/* Efecto destello / starburst de toque */
+@keyframes starburstPulse {
+    0% { transform: scale(0.7) rotate(0deg); opacity: 0.6; }
+    50% { transform: scale(1.2) rotate(20deg); opacity: 1; }
+    100% { transform: scale(0.9) rotate(40deg); opacity: 0.7; }
+}
+.animate-starburst {
+    animation: starburstPulse 1.8s ease-in-out infinite;
+}
+
+/* Brillo y relieve interactivo infantil */
+.card-tactil-kids {
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+}
+.card-tactil-kids:hover {
+    transform: translateY(-4px) scale(1.03);
+}
+.card-tactil-kids:active {
+    transform: translateY(2px) scale(0.97);
+}
+
+/* Animaciones específicas de Mini-Juegos */
+@keyframes bottleSway {
+    0%, 100% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(-6deg);
+    }
+    75% {
+        transform: rotate(6deg);
+    }
+}
+.animate-bottle-sway {
+    animation: bottleSway 2.6s ease-in-out infinite;
+    transform-origin: 50% 90%;
+}
+
+@keyframes softGlow {
+    0%, 100% {
+        filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.75)) drop-shadow(0 0 24px rgba(16, 185, 129, 0.5));
+        transform: scale(1.06);
+    }
+    50% {
+        filter: drop-shadow(0 0 20px rgba(56, 189, 248, 0.95)) drop-shadow(0 0 35px rgba(16, 185, 129, 0.75));
+        transform: scale(1.1);
+    }
+}
+.bottle-selected-glow {
+    animation: softGlow 1.8s ease-in-out infinite;
+}
+
+@keyframes binCelebrateJump {
+    0% { transform: translateY(0) scale(1); }
+    30% { transform: translateY(-24px) scale(1.08, 0.95); }
+    55% { transform: translateY(-4px) scale(0.97, 1.04); }
+    75% { transform: translateY(-10px) scale(1.02); }
+    100% { transform: translateY(0) scale(1); }
+}
+.animate-bin-jump {
+    animation: binCelebrateJump 0.65s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+@keyframes sparkleBurst {
+    0% { transform: scale(0.2) rotate(0deg); opacity: 0; }
+    50% { transform: scale(1.2) rotate(15deg); opacity: 1; }
+    100% { transform: scale(1) rotate(25deg); opacity: 0.95; }
+}
+.animate-sparkle-burst {
+    animation: sparkleBurst 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes bubbleFloatUp {
+    0% { transform: translateY(15px) scale(0.5); opacity: 0; }
+    25% { opacity: 0.95; }
+    100% { transform: translateY(-50px) scale(1.2); opacity: 0; }
+}
+.animate-bubble-float {
+    animation: bubbleFloatUp 1.3s ease-out forwards;
+}
+
+/* Animaciones específicas de Mini-Juego 2: El río feliz */
+@keyframes riverZoomPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.025); }
+}
+.animate-river-zoom {
+    animation: riverZoomPulse 5s ease-in-out infinite;
+}
+
+@keyframes waterShimmer {
+    0%, 100% { opacity: 0.18; transform: translateY(0) scaleY(1); }
+    50% { opacity: 0.4; transform: translateY(-3px) scaleY(1.04); }
+}
+.animate-water-shimmer {
+    animation: waterShimmer 4s ease-in-out infinite;
+}
+
+@keyframes bubbleRiseSlow {
+    0% { transform: translateY(10px) scale(0.6); opacity: 0; }
+    25% { opacity: 0.65; }
+    80% { opacity: 0.55; }
+    100% { transform: translateY(-50px) scale(1.1); opacity: 0; }
+}
+.animate-bubble-rise-1 { animation: bubbleRiseSlow 4.2s ease-in infinite; }
+.animate-bubble-rise-2 { animation: bubbleRiseSlow 5.5s ease-in infinite 1.8s; }
+.animate-bubble-rise-3 { animation: bubbleRiseSlow 4.8s ease-in infinite 0.9s; }
+
+@keyframes dirtyDrift {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.35; }
+    35% { transform: translate(4px, -5px) rotate(6deg); opacity: 0.6; }
+    70% { transform: translate(-4px, 4px) rotate(-5deg); opacity: 0.4; }
+}
+.animate-dirty-drift {
+    animation: dirtyDrift 6s ease-in-out infinite;
+}
+
+@keyframes gentleShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    50% { transform: translateX(6px); }
+    75% { transform: translateX(-4px); }
+}
+.animate-gentle-shake {
+    animation: gentleShake 0.4s ease-in-out;
+}
+
+@keyframes rainbowPop {
+    0% { transform: scale(0.4) translateY(8px); opacity: 0; }
+    65% { transform: scale(1.06) translateY(-2px); opacity: 1; }
+    100% { transform: scale(1) translateY(0); opacity: 0.95; }
+}
+.animate-rainbow-pop {
+    animation: rainbowPop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Animaciones específicas de Mini-Juego 3 */
+@keyframes floatSway {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    50% { transform: translate(4px, -6px) rotate(6deg); }
+}
+.animate-float-sway {
+    animation: floatSway 3.2s ease-in-out infinite;
+}
+
+@keyframes bagWave {
+    0%, 100% { transform: rotate(-5deg) scale(1); }
+    50% { transform: rotate(5deg) scale(1.03); }
+}
+.animate-bag-wave {
+    animation: bagWave 3.8s ease-in-out infinite;
+}
+
+@keyframes cupBob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
+}
+.animate-cup-bob {
+    animation: cupBob 2.5s ease-in-out infinite;
+}
+
+@keyframes swimSwim1 {
+    0% { transform: translate(-80px, 0) scaleX(1); }
+    45% { transform: translate(140px, -15px) scaleX(1); }
+    50% { transform: translate(140px, -15px) scaleX(-1); }
+    95% { transform: translate(-80px, 10px) scaleX(-1); }
+    100% { transform: translate(-80px, 0) scaleX(1); }
+}
+.animate-fish-swim-1 {
+    animation: swimSwim1 9s ease-in-out infinite;
+}
+
+@keyframes swimSwim2 {
+    0% { transform: translate(80px, 0) scaleX(-1); }
+    45% { transform: translate(-140px, 15px) scaleX(-1); }
+    50% { transform: translate(-140px, 15px) scaleX(1); }
+    95% { transform: translate(80px, -10px) scaleX(1); }
+    100% { transform: translate(80px, 0) scaleX(-1); }
+}
+.animate-fish-swim-2 {
+    animation: swimSwim2 11s ease-in-out infinite;
+}
+
+@keyframes swimSwim3 {
+    0% { transform: translate(0, 60px); }
+    50% { transform: translate(30px, -30px); }
+    100% { transform: translate(0, 60px); }
+}
+.animate-fish-swim-3 {
+    animation: swimSwim3 7.5s ease-in-out infinite;
+}
+
+/* Animaciones específicas de Mini-Juego 4 */
+@keyframes algaeSway {
+    0%, 100% { transform: skewX(-4deg) rotate(-2deg); }
+    50% { transform: skewX(4deg) rotate(2deg); }
+}
+.animate-algae-sway {
+    animation: algaeSway 3.6s ease-in-out infinite;
+    transform-origin: bottom center;
+}
+
+@keyframes fishSwimming {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-4px) rotate(-3deg); }
+    75% { transform: translateY(3px) rotate(2deg); }
+}
+.animate-fish-swimming {
+    animation: fishSwimming 2.8s ease-in-out infinite;
+}
+
+/* Animaciones específicas de Mini-Juego 5 */
+@keyframes girlThinking {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(-2.5deg) translateY(-2px); }
+}
+.animate-girl-thinking {
+    animation: girlThinking 3s ease-in-out infinite;
+    transform-origin: 30% 90%;
+}
+
+@keyframes turtleBob {
+    0%, 100% { transform: translateY(0) rotate(-1deg); }
+    50% { transform: translateY(-5px) rotate(2deg); }
+}
+.animate-turtle-bob {
+    animation: turtleBob 3.4s ease-in-out infinite;
+}
+
+@keyframes duckPaddle {
+    0%, 100% { transform: translateX(0) translateY(0); }
+    50% { transform: translateX(12px) translateY(-3px); }
+}
+.animate-duck-paddle {
+    animation: duckPaddle 5s ease-in-out infinite;
+}
+
+@keyframes pulseGlowButton {
+    0%, 100% { transform: scale(1); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15); }
+    50% { transform: scale(1.02); box-shadow: 0 6px 22px rgba(16, 185, 129, 0.4); }
+}
+.animate-pulse-glow {
+    animation: pulseGlowButton 2.2s ease-in-out infinite;
+}
+
+@keyframes buttonPopIn {
+    0% { transform: scale(0.6); opacity: 0; }
+    70% { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.animate-button-pop {
+    animation: buttonPopIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Animaciones de peces nadando por todo el río */
+@keyframes riverFishSwimLeftToRight {
+    0% { transform: translate(-100px, 0px) scaleX(1); opacity: 0; }
+    10% { opacity: 0.95; }
+    45% { transform: translate(320px, -15px) scaleX(1); opacity: 0.95; }
+    50% { transform: translate(320px, -15px) scaleX(-1); opacity: 0.95; }
+    90% { opacity: 0.95; }
+    95% { transform: translate(-100px, 15px) scaleX(-1); opacity: 0; }
+    100% { transform: translate(-100px, 0px) scaleX(1); opacity: 0; }
+}
+
+@keyframes riverFishSwimRightToLeft {
+    0% { transform: translate(340px, 0px) scaleX(-1); opacity: 0; }
+    10% { opacity: 0.95; }
+    45% { transform: translate(-80px, 20px) scaleX(-1); opacity: 0.95; }
+    50% { transform: translate(-80px, 20px) scaleX(1); opacity: 0.95; }
+    90% { opacity: 0.95; }
+    95% { transform: translate(340px, -10px) scaleX(1); opacity: 0; }
+    100% { transform: translate(340px, 0px) scaleX(-1); opacity: 0; }
+}
+
+/* Secuencia ilustrada del mini-juego 5, repetida en ciclos de cinco segundos */
+.m5-scene-layer {
+    opacity: 0;
+    animation-duration: 5s;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+}
+.m5-girl { animation-name: m5-scene-appear; animation-delay: 0s; }
+.m5-sign { animation-name: m5-scene-appear; animation-delay: 0.35s; }
+.m5-fish-one { animation-name: m5-scene-appear; animation-delay: 0.65s; }
+.m5-fish-two { animation-name: m5-scene-appear; animation-delay: 0.9s; }
+.m5-turtle { animation-name: m5-scene-appear; animation-delay: 1.15s; }
+.m5-duck { animation-name: m5-scene-appear; animation-delay: 1.4s; }
+.m5-bottle { animation-name: m5-bottle-throw; animation-delay: 1.7s; }
+
+@keyframes m5-scene-appear {
+    0%, 4% { opacity: 0; transform: translateY(12px) scale(0.94); }
+    12%, 82% { opacity: 1; transform: translateY(0) scale(1); }
+    94%, 100% { opacity: 0; transform: translateY(5px) scale(0.98); }
+}
+
+@keyframes m5-bottle-throw {
+    0%, 18% { opacity: 0; transform: translate(0, 0) rotate(0deg) scale(0.8); }
+    24% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
+    52% { opacity: 1; transform: translate(-110%, 120%) rotate(240deg) scale(0.8); }
+    65%, 82% { opacity: 0.8; transform: translate(-110%, 120%) rotate(250deg) scale(0.72); }
+    94%, 100% { opacity: 0; transform: translate(0, 0) rotate(0deg) scale(0.8); }
+}
+
+.animate-fish-drift-1 {
+    animation: riverFishSwimLeftToRight 13s ease-in-out infinite;
+}
+.animate-fish-drift-2 {
+    animation: riverFishSwimRightToLeft 15s ease-in-out infinite 2s;
+}
+.animate-fish-drift-3 {
+    animation: riverFishSwimLeftToRight 11s ease-in-out infinite 4s;
+}
+.animate-fish-drift-4 {
+    animation: riverFishSwimRightToLeft 14s ease-in-out infinite 1s;
+}
+.animate-fish-drift-5 {
+    animation: riverFishSwimLeftToRight 16s ease-in-out infinite 5s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-river-zoom,
+    .animate-water-shimmer,
+    .animate-bubble-rise-1,
+    .animate-bubble-rise-2,
+    .animate-bubble-rise-3,
+    .animate-dirty-drift,
+    .animate-gentle-shake,
+    .animate-rainbow-pop {
+        animation: none !important;
+    }
 }

@@ -21,14 +21,14 @@ import FeedbackBanner from '../components/FeedbackBanner.astro';
     </main>
 
     <script>
-        import { QUESTIONS } from '../data/questions';
+        import { MISSIONS } from '../data/missions';
 
         const state = {
             playerName: 'Eco-Explorador',
             currentScreen: 'start',
-            questionIndex: 0,
+            missionIndex: 0,
             score: 0,
-            isAnswering: false,
+            isCompleted: false,
             timeoutId: null as ReturnType<typeof setTimeout> | null
         };
 
@@ -391,126 +391,1957 @@ Sube la foto indicada.`;
             if (errorMsg) errorMsg.textContent = 'Sube la foto indicada.';
         }
 
-        // --- GAME LOGIC ---
-        function startGame() {
-            goToScreen('upload', 'game');
-            state.questionIndex = 0;
-            state.score = 0;
-            setTimeout(renderQuestion, 350);
-        }
+        
+        // --- AUDIO MANAGEMENT ---
+        const audioEl = document.getElementById('mission-audio') as HTMLAudioElement;
+        const audioBtn = document.getElementById('btn-play-audio');
+        const audioIcon = document.getElementById('audio-icon');
 
-        function renderQuestion() {
-            state.isAnswering = false;
-            const q = QUESTIONS[state.questionIndex];
-            
-            // Background: fondo2.png se muestra limpio y nítido
-            document.getElementById('app-bg')!.style.backgroundImage = `url('${q.bg}')`;
-
-            // Progress Header (Exacto a la imagen: "1 de 8")
-            document.getElementById('game-counter')!.innerText = `${state.questionIndex + 1} de ${QUESTIONS.length}`;
-            (document.getElementById('game-progress') as HTMLElement).style.width = `${((state.questionIndex) / QUESTIONS.length) * 100}%`;
-            
-            // Instruction Title con el nombre del participante
-            const gameTitle = document.getElementById('game-title-text');
-            if (gameTitle) gameTitle.innerText = `¡Vamos, ${state.playerName}! Escoge la respuesta correcta`;
-            
-            // Texto de la pregunta en el globo verde
-            document.getElementById('game-question')!.innerText = q.text;
-
-            // Options (Duolingo Style: 4 botones centrados con números 1, 2, 3, 4)
-            const container = document.getElementById('game-options')!;
-            container.innerHTML = '';
-            
-            q.options.forEach((opt, idx) => {
-                const btn = document.createElement('button');
-                btn.className = "option-btn group w-full bg-white px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl border-2 border-b-4 border-slate-200 shadow-sm active:border-b-2 active:translate-y-[2px] flex items-center justify-between hover:border-emerald-500 hover:bg-emerald-50/20 transition-all cursor-pointer";
-                btn.innerHTML = `
-                    <span class="option-num w-6 h-6 sm:w-7 sm:h-7 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 font-extrabold text-xs flex items-center justify-center shrink-0 group-hover:border-emerald-400 group-hover:text-emerald-700 transition-colors">${idx + 1}</span>
-                    <span class="flex-1 text-center font-extrabold text-xs sm:text-sm md:text-base text-slate-800 px-2 leading-snug">${opt}</span>
-                    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 border-transparent flex items-center justify-center shrink-0 indicator-circle text-[11px]"></div>
-                `;
-                btn.onclick = () => handleAnswer(idx, btn);
-                container.appendChild(btn);
-            });
-        }
-
-        function handleAnswer(selectedIndex: number, selectedBtn: HTMLButtonElement) {
-            if (state.isAnswering) return;
-            state.isAnswering = true;
-
-            const q = QUESTIONS[state.questionIndex];
-            const isCorrect = (selectedIndex === q.correct);
-            const allBtns = document.querySelectorAll('.option-btn') as NodeListOf<HTMLButtonElement>;
-            
-            allBtns.forEach(btn => btn.disabled = true);
-
-            const banner = document.getElementById('feedback-banner')!;
-            const bgBanner = document.getElementById('feedback-bg')!;
-            const mascotEl = document.getElementById('feedback-mascot') as HTMLImageElement;
-            const titleEl = document.getElementById('feedback-title')!;
-            const descEl = document.getElementById('feedback-desc')!;
-
-            if (isCorrect) {
-                state.score++;
-                selectedBtn.className = "option-btn w-full bg-emerald-100 border-2 border-b-4 border-emerald-500 border-b-emerald-700 text-emerald-950 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl flex items-center justify-between shadow-sm";
-                const num = selectedBtn.querySelector('.option-num');
-                if (num) num.className = "option-num w-6 h-6 sm:w-7 sm:h-7 rounded-lg border border-emerald-600 bg-emerald-600 text-white font-black text-xs flex items-center justify-center shrink-0";
-                const circle = selectedBtn.querySelector('.indicator-circle')!;
-                circle.className = "w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs shrink-0 shadow-sm";
-                circle.innerHTML = '<i class="fa-solid fa-check"></i>';
-
-                bgBanner.className = "w-full max-w-sm sm:max-w-md mx-auto min-h-[64px] sm:min-h-[72px] bg-emerald-500 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.3)] p-2 sm:p-3 flex flex-row items-center justify-between gap-2.5 pointer-events-auto border-2 border-white/30";
-                mascotEl.src = "/images/FELICITA.png";
-                titleEl.innerText = "¡Muy bien! 🎉";
-                descEl.innerText = q.explanation;
-            } else {
-                selectedBtn.className = "option-btn w-full bg-rose-100 border-2 border-b-4 border-rose-500 border-b-rose-700 text-rose-950 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl flex items-center justify-between shadow-sm animate-shake";
-                const num = selectedBtn.querySelector('.option-num');
-                if (num) num.className = "option-num w-6 h-6 sm:w-7 sm:h-7 rounded-lg border border-rose-600 bg-rose-600 text-white font-black text-xs flex items-center justify-center shrink-0";
-                const circle = selectedBtn.querySelector('.indicator-circle')!;
-                circle.className = "w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs shrink-0 shadow-sm";
-                circle.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-
-                const correctBtn = allBtns[q.correct];
-                setTimeout(() => {
-                    correctBtn.className = "option-btn w-full bg-emerald-50 border-2 border-b-4 border-emerald-500 border-b-emerald-600 text-emerald-900 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl flex items-center justify-between shadow-sm";
-                    const cNum = correctBtn.querySelector('.option-num');
-                    if (cNum) cNum.className = "option-num w-6 h-6 sm:w-7 sm:h-7 rounded-lg border border-emerald-600 bg-emerald-500 text-white font-black text-xs flex items-center justify-center shrink-0";
-                    const cCircle = correctBtn.querySelector('.indicator-circle')!;
-                    cCircle.className = "w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs shrink-0 shadow-sm";
-                    cCircle.innerHTML = '<i class="fa-solid fa-check"></i>';
-                }, 300);
-
-                bgBanner.className = "w-full max-w-sm sm:max-w-md mx-auto min-h-[64px] sm:min-h-[72px] bg-rose-600 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.3)] p-2 sm:p-3 flex flex-row items-center justify-between gap-2.5 pointer-events-auto border-2 border-white/30";
-                mascotEl.src = "/images/explica.png";
-                titleEl.innerText = "😔 Sigue aprendiendo";
-                descEl.innerHTML = `${q.explanation}`;
+        function playMissionAudio(url: string) {
+            if (!audioEl) return;
+            audioEl.src = encodeURI(url);
+            audioEl.currentTime = 0;
+            const playPromise = audioEl.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    audioIcon?.classList.remove('fa-volume-high');
+                    audioIcon?.classList.add('fa-volume-slash', 'animate-pulse');
+                }).catch(() => {
+                    // Autoplay prevenido por navegador hasta primer toque
+                });
             }
+        }
+
+        const startIntroAudio = document.getElementById('start-intro-audio') as HTMLAudioElement | null;
+        const uploadGuideAudio = document.getElementById('upload-guide-audio') as HTMLAudioElement | null;
+        startIntroAudio?.play().catch(() => {});
+
+        audioEl?.addEventListener('ended', () => {
+            audioIcon?.classList.remove('fa-volume-slash', 'animate-pulse');
+            audioIcon?.classList.add('fa-volume-high');
+        });
+
+        audioEl?.addEventListener('pause', () => {
+            audioIcon?.classList.remove('fa-volume-slash', 'animate-pulse');
+            audioIcon?.classList.add('fa-volume-high');
+        });
+
+        audioBtn?.addEventListener('click', () => {
+            if (!audioEl) return;
+            if (audioEl.paused) {
+                audioEl.play().catch(() => {});
+                audioIcon?.classList.remove('fa-volume-high');
+                audioIcon?.classList.add('fa-volume-slash', 'animate-pulse');
+            } else {
+                audioEl.pause();
+                audioIcon?.classList.remove('fa-volume-slash', 'animate-pulse');
+                audioIcon?.classList.add('fa-volume-high');
+            }
+        });
+
+        // --- ERROR FEEDBACK BANNER ---
+        function showErrorFeedback(message: string) {
+            const banner = document.getElementById('feedback-banner');
+            const bgBanner = document.getElementById('feedback-bg');
+            const mascotEl = document.getElementById('feedback-mascot') as HTMLImageElement;
+            const titleEl = document.getElementById('feedback-title');
+            const descEl = document.getElementById('feedback-desc');
+
+            if (!banner || !bgBanner) return;
+
+            bgBanner.className = "w-full max-w-sm sm:max-w-md mx-auto min-h-[56px] sm:min-h-[64px] bg-rose-600 rounded-2xl shadow-xl p-2.5 sm:p-3 flex flex-row items-center justify-between gap-2.5 pointer-events-auto border-2 border-white/30 animate-shake";
+            if (mascotEl) mascotEl.src = "/images/explica.png";
+            if (titleEl) titleEl.innerText = "¡Inténtalo de nuevo! 🌱";
+            if (descEl) descEl.innerText = message;
 
             banner.classList.remove('translate-y-full');
 
             if (state.timeoutId) clearTimeout(state.timeoutId);
-            
             state.timeoutId = setTimeout(() => {
-                advanceGame();
-            }, 3500);
+                banner.classList.add('translate-y-full');
+            }, 3000);
         }
 
-        function advanceGame() {
-            const banner = document.getElementById('feedback-banner')!;
-            banner.classList.add('translate-y-full');
+        // Variables de temporizadores para misiones interactivas
+        let m1IdleTimer: any = null;
+        let m1HandTimeout: any = null;
+        let m2IdleTimer: any = null;
+        let m2HandTimeout: any = null;
+        let autoNextMissionTimer: any = null;
+        let activeMissionTimeouts: any[] = [];
 
-            state.questionIndex++;
-            
-            if (state.questionIndex < QUESTIONS.length) {
-                setTimeout(() => {
-                    renderQuestion();
-                }, 350); 
-            } else {
-                setTimeout(() => {
-                    showResults();
-                }, 350);
+        function addMissionTimeout(fn: () => void, ms: number) {
+            const t = setTimeout(fn, ms);
+            activeMissionTimeouts.push(t);
+            return t;
+        }
+
+        function clearAutoNextTimer() {
+            if (autoNextMissionTimer) {
+                clearTimeout(autoNextMissionTimer);
+                autoNextMissionTimer = null;
             }
+        }
+
+        function clearMission1Timers() {
+            if (m1IdleTimer) { clearTimeout(m1IdleTimer); m1IdleTimer = null; }
+            if (m1HandTimeout) { clearTimeout(m1HandTimeout); m1HandTimeout = null; }
+            const pointer = document.getElementById('m1-pointer');
+            if (pointer) {
+                pointer.style.opacity = '0';
+                pointer.style.transition = 'none';
+            }
+        }
+
+        function clearMission2Timers() {
+            if (m2IdleTimer) { clearTimeout(m2IdleTimer); m2IdleTimer = null; }
+            if (m2HandTimeout) { clearTimeout(m2HandTimeout); m2HandTimeout = null; }
+            const pointer = document.getElementById('m2-pointer');
+            if (pointer) {
+                pointer.style.opacity = '0';
+                pointer.style.transition = 'none';
+            }
+        }
+
+        function clearAllMissionTimers() {
+            clearMission1Timers();
+            clearMission2Timers();
+            activeMissionTimeouts.forEach(t => clearTimeout(t));
+            activeMissionTimeouts = [];
+        }
+
+        // Función para avanzar a la siguiente misión (manual o automática tras 5s)
+        function advanceToNextMission() {
+            clearAutoNextTimer();
+            const modal = document.getElementById('game-star-modal');
+            const card = document.getElementById('star-modal-card');
+            if (modal && !modal.classList.contains('hidden')) {
+                modal.classList.add('opacity-0');
+                card?.classList.remove('scale-100');
+                card?.classList.add('scale-90');
+
+                // Detener cualquier audio o animación anterior al avanzar a la siguiente misión
+                if (audioEl) {
+                    audioEl.pause();
+                    audioEl.currentTime = 0;
+                }
+                clearAllMissionTimers();
+
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    state.missionIndex++;
+                    if (state.missionIndex < MISSIONS.length) {
+                        renderMission();
+                    } else {
+                        showResults();
+                    }
+                }, 300);
+            }
+        }
+
+        // --- CELEBRATION STAR MODAL (Acierto Oficial) ---
+        function celebrateMission(successMsg: string) {
+            if (state.isCompleted) return;
+            state.isCompleted = true;
+            state.score++;
+
+            // Detener cualquier audio previo
+            if (audioEl) {
+                audioEl.pause();
+                audioEl.currentTime = 0;
+            }
+
+            // Detener animaciones y temporizadores
+            clearAllMissionTimers();
+            clearAutoNextTimer();
+
+            // Desactivar temporalmente interacciones en el escenario para evitar clics múltiples
+            const stage = document.getElementById('game-stage');
+            if (stage) stage.style.pointerEvents = 'none';
+
+            // Actualizar la barra de progreso de 1 a 8 misiones completables
+            const progressEl = document.getElementById('game-progress') as HTMLElement;
+            if (progressEl) {
+                progressEl.style.width = `${((state.missionIndex + 1) / MISSIONS.length) * 100}%`;
+            }
+            const counterEl = document.getElementById('game-counter');
+            if (counterEl) {
+                counterEl.innerText = `${state.missionIndex + 1} de ${MISSIONS.length}`;
+            }
+
+            // Reproducir el nuevo audio de felicitación de cada juego
+            const currentMission = MISSIONS[state.missionIndex];
+            if (currentMission?.celebrationAudio) {
+                playMissionAudio(currentMission.celebrationAudio);
+            }
+
+            fireConfetti();
+
+            const banner = document.getElementById('feedback-banner');
+            banner?.classList.add('translate-y-full');
+
+            const modal = document.getElementById('game-star-modal');
+            const msgEl = document.getElementById('star-success-message');
+            const card = document.getElementById('star-modal-card');
+
+            if (msgEl) msgEl.innerText = successMsg;
+
+            if (modal) {
+                const btnNext = document.getElementById('btn-next-mission');
+                if (btnNext) {
+                    if (state.missionIndex === MISSIONS.length - 1) {
+                        btnNext.innerHTML = `<span>Finalizar aventura 🎉</span><i class="fa-solid fa-trophy text-base"></i>`;
+                    } else {
+                        btnNext.innerHTML = `<span>Siguiente misión</span><i class="fa-solid fa-arrow-right text-sm"></i>`;
+                    }
+                }
+
+                modal.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    modal.classList.remove('opacity-0');
+                    card?.classList.remove('scale-90');
+                    card?.classList.add('scale-100');
+                });
+
+                // En caso no presione "Siguiente misión", pasar automáticamente:
+                // 5 segundos para misiones 1-7, y 6 segundos para la misión final 8 por su narración de victoria
+                const autoAdvanceDelay = (state.missionIndex === MISSIONS.length - 1) ? 6000 : 5000;
+                autoNextMissionTimer = setTimeout(() => {
+                    advanceToNextMission();
+                }, autoAdvanceDelay);
+            }
+        }
+
+        document.getElementById('btn-next-mission')?.addEventListener('click', () => {
+            advanceToNextMission();
+        });
+
+        // --- GAME START & RENDER ---
+        function startGame() {
+            goToScreen('upload', 'game');
+            state.missionIndex = 0;
+            state.score = 0;
+            setTimeout(renderMission, 350);
+        }
+
+        function renderMission() {
+            state.isCompleted = false;
+            const mission = MISSIONS[state.missionIndex];
+            if (!mission) return;
+
+            // Detener cualquier animación o temporizador de la misión anterior
+            clearAllMissionTimers();
+
+            // Background limpio
+            document.getElementById('app-bg')!.style.backgroundImage = "url('/images/fondo2.png')";
+
+            // Header progress
+            const counterEl = document.getElementById('game-counter');
+            if (counterEl) counterEl.innerText = `${state.missionIndex + 1} de ${MISSIONS.length}`;
+
+            const progressEl = document.getElementById('game-progress') as HTMLElement;
+            if (progressEl) progressEl.style.width = `${((state.missionIndex) / MISSIONS.length) * 100}%`;
+
+            // Mission info
+            const titleEl = document.getElementById('game-mission-title');
+            if (titleEl) titleEl.innerText = mission.title;
+
+            const questionEl = document.getElementById('game-question');
+            if (questionEl) questionEl.innerText = mission.question;
+
+            // Para el juego 1, no colocar instrucciones escritas adicionales ("Desliza la botella")
+            const instructionContainer = document.getElementById('game-instruction-container');
+            const instructionEl = document.getElementById('game-instruction');
+            if (instructionEl) instructionEl.innerText = mission.instruction;
+            if (instructionContainer) {
+                if (mission.id === 1) {
+                    instructionContainer.classList.add('hidden');
+                } else {
+                    instructionContainer.classList.remove('hidden');
+                }
+            }
+
+            // Audio narración (sin solapamiento)
+            playMissionAudio(mission.audio);
+
+            // Escenario
+            const stage = document.getElementById('game-stage')!;
+            stage.style.pointerEvents = 'auto';
+            stage.innerHTML = '';
+
+            switch (mission.id) {
+                case 1: renderMission1(stage); break;
+                case 2: renderMission2(stage); break;
+                case 3: renderMission3(stage); break;
+                case 4: renderMission4(stage); break;
+                case 5: renderMission5(stage); break;
+                case 6: renderMission6(stage); break;
+                case 7: renderMission7(stage); break;
+                case 8: renderMission8(stage); break;
+            }
+        }
+
+        // ==========================================
+        // MINI-JUEGO 1: La botella perdida
+        // ==========================================
+        function renderMission1(stage: HTMLElement) {
+            clearMission1Timers();
+
+            stage.innerHTML = `
+                <div id="m1-container" class="w-full h-full flex flex-row items-center justify-between relative px-4 sm:px-10 py-2 select-none overflow-hidden touch-none">
+                    
+                    <!-- Efectos de celebración: Destellos dorados y Burbujas -->
+                    <div id="m1-celebration-effects" class="pointer-events-none absolute inset-0 z-30 flex items-center justify-center hidden">
+                        <img id="m1-sparkles" src="/images/juego 1 destellos.png" alt="Destellos dorados" class="absolute right-4 sm:right-12 w-48 sm:w-64 h-auto object-contain pointer-events-none">
+                        <img id="m1-bubbles" src="/images/juego 1 burbujas.png" alt="Burbujas" class="absolute right-2 sm:right-10 w-44 sm:w-60 h-auto object-contain pointer-events-none">
+                    </div>
+
+                    <!-- Puntero animado (Mano blanca con contorno azul) -->
+                    <div id="m1-pointer" class="pointer-events-none absolute z-40 opacity-0 transition-opacity duration-300">
+                        <img src="/images/juego 1.png" alt="Puntero de ayuda" class="w-12 sm:w-16 h-auto object-contain drop-shadow-2xl rotate-[-10deg]">
+                    </div>
+
+                    <!-- Botella grande con balanceo suave inicial -->
+                    <div id="m1-bottle-wrapper" class="relative z-20 flex flex-col items-center select-none touch-none">
+                        <div id="m1-bottle" class="cursor-grab active:cursor-grabbing p-2 transition-transform duration-150 animate-bottle-sway flex items-center justify-center touch-none">
+                            <img id="m1-bottle-img" src="/images/Juego 1 Botella.png" alt="Botella de plástico" class="w-28 sm:w-40 max-h-[190px] sm:max-h-[250px] object-contain drop-shadow-2xl pointer-events-none">
+                        </div>
+                    </div>
+
+                    <!-- Tacho verde grande -->
+                    <div id="m1-bin-wrapper" class="relative z-10 flex flex-col items-center select-none cursor-pointer p-2">
+                        <div id="m1-bin" class="flex flex-col items-center transition-transform duration-250 transform-gpu">
+                            <img id="m1-bin-img" src="/images/juego 1 tacho cerrado.png" alt="Tacho verde" class="w-32 sm:w-48 max-h-[190px] sm:max-h-[250px] object-contain drop-shadow-2xl pointer-events-none">
+                        </div>
+                    </div>
+
+                </div>
+            `;
+
+            const container = document.getElementById('m1-container')!;
+            const bottle = document.getElementById('m1-bottle')!;
+            const bin = document.getElementById('m1-bin')!;
+            const binImg = document.getElementById('m1-bin-img') as HTMLImageElement;
+            const pointer = document.getElementById('m1-pointer')!;
+
+            let isWon = false;
+            let isSelected = false;
+            let isDragging = false;
+            let isPointerDown = false;
+            let hasInteracted = false;
+            let startX = 0;
+            let startY = 0;
+
+            // Función para detener el puntero animado si el niño interactúa
+            const stopHandPointer = () => {
+                if (m1HandTimeout) {
+                    clearTimeout(m1HandTimeout);
+                    m1HandTimeout = null;
+                }
+                if (pointer) {
+                    pointer.style.transition = 'opacity 0.25s ease';
+                    pointer.style.opacity = '0';
+                }
+            };
+
+            // Programar repetición del puntero cada 7 segundos de inactividad
+            const resetIdleTimer = () => {
+                if (m1IdleTimer) clearTimeout(m1IdleTimer);
+                if (!isWon) {
+                    m1IdleTimer = setTimeout(() => {
+                        runPointerDemonstration();
+                    }, 7000);
+                }
+            };
+
+            // Demostración del recorrido con la mano blanca animada
+            const runPointerDemonstration = () => {
+                if (isWon || isPointerDown || isDragging || !pointer || !container || !bottle || !bin) return;
+
+                stopHandPointer();
+
+                const cRect = container.getBoundingClientRect();
+                const bRect = bottle.getBoundingClientRect();
+                const tRect = bin.getBoundingClientRect();
+
+                // Coordenadas relativas al contenedor
+                const startBottleX = (bRect.left + bRect.width * 0.5) - cRect.left;
+                const startBottleY = (bRect.top + bRect.height * 0.45) - cRect.top;
+                const targetBinX = (tRect.left + tRect.width * 0.5) - cRect.left;
+                const targetBinY = (tRect.top + tRect.height * 0.35) - cRect.top;
+
+                // 1. La mano aparece cerca de la botella
+                pointer.style.transition = 'none';
+                pointer.style.left = `${startBottleX}px`;
+                pointer.style.top = `${startBottleY}px`;
+                pointer.style.transform = 'translate(-40%, -30%) scale(1.1)';
+                pointer.style.opacity = '0';
+
+                requestAnimationFrame(() => {
+                    pointer.style.transition = 'opacity 0.4s ease';
+                    pointer.style.opacity = '1';
+
+                    // 2. Se desplaza lentamente desde la botella hasta el tacho verde
+                    m1HandTimeout = setTimeout(() => {
+                        if (isWon || isPointerDown) return;
+
+                        const moveDistX = targetBinX - startBottleX;
+                        const moveDistY = targetBinY - startBottleY;
+
+                        pointer.style.transition = 'transform 2.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease';
+                        pointer.style.transform = `translate(calc(-40% + ${moveDistX}px), calc(-30% + ${moveDistY}px)) scale(0.98)`;
+
+                        // 3. Después de mostrar el recorrido, desaparece suavemente
+                        m1HandTimeout = setTimeout(() => {
+                            if (isWon || isPointerDown) return;
+                            pointer.style.opacity = '0';
+
+                            m1HandTimeout = setTimeout(() => {
+                                pointer.style.transition = 'none';
+                                resetIdleTimer();
+                            }, 500);
+                        }, 2250);
+                    }, 400);
+                });
+            };
+
+            // La demostración se realiza una vez al comenzar la actividad
+            setTimeout(() => {
+                if (!hasInteracted && !isWon) {
+                    runPointerDemonstration();
+                }
+            }, 800);
+
+            // Secuencia de respuesta correcta oficial
+            const executeCorrectAnswer = () => {
+                if (isWon) return;
+                isWon = true;
+
+                clearMission1Timers();
+                stopHandPointer();
+
+                // Desactivar interacción temporal
+                stage.style.pointerEvents = 'none';
+
+                // 1. El tacho abre su tapa y aumenta tamaño
+                binImg.src = '/images/juego 1 tacho abierto.png';
+                bin.classList.add('scale-110');
+
+                // 2. La botella se mueve hacia su interior y desaparece
+                const bRect = bottle.getBoundingClientRect();
+                const tRect = bin.getBoundingClientRect();
+                const deltaX = (tRect.left + tRect.width / 2) - (bRect.left + bRect.width / 2);
+                const deltaY = (tRect.top + tRect.height * 0.38) - (bRect.top + bRect.height / 2);
+
+                bottle.style.transition = 'transform 0.65s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.55s ease';
+                bottle.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(0.18) rotate(32deg)`;
+                bottle.style.opacity = '0';
+
+                // 3. Cuando la botella entra completamente:
+                setTimeout(() => {
+                    // El tacho cierra su tapa
+                    binImg.src = '/images/juego 1 tacho cerrado.png';
+                    bin.classList.remove('scale-110');
+
+                    // Pequeño salto de celebración
+                    bin.classList.add('animate-bin-jump');
+
+                    // Aparecen estrellas doradas y algunas burbujas
+                    const effects = document.getElementById('m1-celebration-effects');
+                    const sparkles = document.getElementById('m1-sparkles');
+                    const bubbles = document.getElementById('m1-bubbles');
+
+                    if (effects) effects.classList.remove('hidden');
+                    if (sparkles) sparkles.classList.add('animate-sparkle-burst');
+                    if (bubbles) bubbles.classList.add('animate-bubble-float');
+
+                    // Se muestra la estrella feliz animada y felicitación
+                    setTimeout(() => {
+                        celebrateMission(MISSIONS[0].successMessage);
+                    }, 650);
+                }, 650);
+            };
+
+            // Manejo de Interacción: Opción A (Arrastrar y Soltar) & Opción B (Tocar y Seleccionar)
+            bottle.addEventListener('pointerdown', (e: PointerEvent) => {
+                if (isWon) return;
+                hasInteracted = true;
+                stopHandPointer();
+                if (m1IdleTimer) clearTimeout(m1IdleTimer);
+
+                // La animación de balanceo se detiene cuando el niño interactúa
+                bottle.classList.remove('animate-bottle-sway');
+
+                isPointerDown = true;
+                isDragging = false;
+                startX = e.clientX;
+                startY = e.clientY;
+
+                try {
+                    bottle.setPointerCapture(e.pointerId);
+                } catch (_) {}
+
+                bottle.style.transition = 'none';
+            });
+
+            bottle.addEventListener('pointermove', (e: PointerEvent) => {
+                if (!isPointerDown || isWon) return;
+
+                const diffX = e.clientX - startX;
+                const diffY = e.clientY - startY;
+
+                // Si se mueve más de 6px se convierte en arrastre
+                if (Math.hypot(diffX, diffY) > 6) {
+                    isDragging = true;
+                    isSelected = false;
+                    bottle.classList.remove('bottle-selected-glow');
+
+                    // La botella sigue el movimiento de forma fluida
+                    bottle.style.transform = `translate(${diffX}px, ${diffY}px) scale(1.08) rotate(5deg)`;
+
+                    // Verificación de proximidad con el tacho
+                    const bRect = bottle.getBoundingClientRect();
+                    const tRect = bin.getBoundingClientRect();
+                    const distX = Math.abs((bRect.left + bRect.width / 2) - (tRect.left + tRect.width / 2));
+                    const distY = Math.abs((bRect.top + bRect.height / 2) - (tRect.top + tRect.height / 2));
+
+                    // Cuando se acerca al tacho, este aumenta ligeramente y abre su tapa
+                    if (distX < (tRect.width * 0.85) && distY < (tRect.height * 0.95)) {
+                        binImg.src = '/images/juego 1 tacho abierto.png';
+                        bin.classList.add('scale-110');
+                    } else {
+                        binImg.src = '/images/juego 1 tacho cerrado.png';
+                        bin.classList.remove('scale-110');
+                    }
+                }
+            });
+
+            const onPointerRelease = (e: PointerEvent) => {
+                if (!isPointerDown || isWon) return;
+                isPointerDown = false;
+
+                try {
+                    bottle.releasePointerCapture(e.pointerId);
+                } catch (_) {}
+
+                if (isDragging) {
+                    isDragging = false;
+                    const bRect = bottle.getBoundingClientRect();
+                    const tRect = bin.getBoundingClientRect();
+                    const distX = Math.abs((bRect.left + bRect.width / 2) - (tRect.left + tRect.width / 2));
+                    const distY = Math.abs((bRect.top + bRect.height / 2) - (tRect.top + tRect.height / 2));
+
+                    // Al soltar la botella sobre el tacho, se activa la respuesta correcta
+                    if (distX < (tRect.width * 0.85) && distY < (tRect.height * 0.95)) {
+                        executeCorrectAnswer();
+                    } else {
+                        // 6. Si suelta la botella fuera del tacho:
+                        // La botella regresa suavemente a su posición original sin cruces ni ruidos negativos
+                        bottle.style.transition = 'transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                        bottle.style.transform = 'translate(0px, 0px) scale(1) rotate(0deg)';
+                        binImg.src = '/images/juego 1 tacho cerrado.png';
+                        bin.classList.remove('scale-110');
+
+                        // Reanudar suave balanceo y programar repetición del puntero tras 7s
+                        setTimeout(() => {
+                            if (!isWon && !isSelected && !isPointerDown) {
+                                bottle.classList.add('animate-bottle-sway');
+                            }
+                        }, 480);
+                        resetIdleTimer();
+                    }
+                } else {
+                    // Opción B: Tocar y seleccionar
+                    // El niño toca la botella, queda seleccionada y muestra un brillo suave
+                    isSelected = true;
+                    bottle.classList.remove('animate-bottle-sway');
+                    bottle.classList.add('bottle-selected-glow');
+
+                    // El tacho abre su tapa suavemente como indicación
+                    binImg.src = '/images/juego 1 tacho abierto.png';
+                    bin.classList.add('scale-105');
+
+                    resetIdleTimer();
+                }
+            };
+
+            bottle.addEventListener('pointerup', onPointerRelease);
+            bottle.addEventListener('pointercancel', onPointerRelease);
+
+            // Toque en el tacho verde (Opción B: Toca la botella seleccionada -> toca el tacho verde)
+            bin.addEventListener('click', () => {
+                if (isWon) return;
+                hasInteracted = true;
+                stopHandPointer();
+
+                if (isSelected) {
+                    // Botella estaba seleccionada: se activa la animación de respuesta correcta
+                    executeCorrectAnswer();
+                } else {
+                    // Si el niño toca directo el tacho sin haber tocado la botella, mostrar demostración
+                    runPointerDemonstration();
+                }
+            });
+        }
+
+        // ==========================================
+        // MINI-JUEGO 2: El río feliz
+        // ==========================================
+        function renderMission2(stage: HTMLElement) {
+            clearMission2Timers();
+
+            stage.innerHTML = `
+                <div id="m2-container" class="w-full h-full flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-6 p-2 select-none relative overflow-hidden">
+                    
+                    <!-- Puntero animado (Mano blanca con contorno azul que oscila entre ambas opciones) -->
+                    <div id="m2-pointer" class="pointer-events-none absolute z-40 opacity-0 transition-opacity duration-300">
+                        <img src="/images/juego 1.png" alt="Puntero de ayuda" class="w-12 sm:w-14 h-auto object-contain drop-shadow-2xl rotate-[-10deg]">
+                    </div>
+
+                    <!-- Opción A: Río Limpio -->
+                    <button id="m2-clean" class="group relative flex-1 max-w-[215px] sm:max-w-[245px] w-full bg-white/95 rounded-3xl p-3 border-4 border-emerald-400 shadow-xl transition-all duration-300 cursor-pointer flex flex-col items-center text-center active:scale-95 card-tactil-kids">
+                        
+                        <!-- Arcoíris decorativo sobre la parte superior al acertar (sin tapar los peces) -->
+                        <div id="m2-rainbow" class="pointer-events-none absolute -top-5 left-1/2 -translate-x-1/2 z-30 opacity-0 scale-50 transition-all duration-500 w-28 sm:w-36 h-auto">
+                            <svg viewBox="0 0 100 50" class="w-full h-auto drop-shadow-md">
+                                <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#ef4444" stroke-width="4.5" stroke-linecap="round"/>
+                                <path d="M 16 50 A 34 34 0 0 1 84 50" fill="none" stroke="#f97316" stroke-width="4.5" stroke-linecap="round"/>
+                                <path d="M 22 50 A 28 28 0 0 1 78 50" fill="none" stroke="#eab308" stroke-width="4.5" stroke-linecap="round"/>
+                                <path d="M 28 50 A 22 22 0 0 1 72 50" fill="none" stroke="#22c55e" stroke-width="4.5" stroke-linecap="round"/>
+                                <path d="M 34 50 A 16 16 0 0 1 66 50" fill="none" stroke="#3b82f6" stroke-width="4.5" stroke-linecap="round"/>
+                                <path d="M 40 50 A 10 10 0 0 1 60 50" fill="none" stroke="#a855f7" stroke-width="4.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+
+                        <!-- Destellos dorados en la celebración -->
+                        <img id="m2-clean-sparkles" src="/images/juego 1 destellos.png" alt="Destellos" class="pointer-events-none absolute -top-4 -right-4 w-28 sm:w-36 h-auto object-contain opacity-0 z-30 pointer-events-none">
+
+                        <!-- Ventana de imagen con zoom suave, reflejos y burbujas ascendentes -->
+                        <div class="w-full h-28 sm:h-36 rounded-2xl overflow-hidden mb-2.5 bg-emerald-100 border-2 border-emerald-300 relative shadow-inner">
+                            <img id="m2-clean-img" src="/images/${encodeURIComponent('juego 2 RIO LIMPIO.jpeg')}" alt="Río limpio" class="w-full h-full object-cover object-center animate-river-zoom transition-all duration-500">
+                            
+                            <!-- Reflejos luminosos sutiles de agua y rayos de sol -->
+                            <div class="pointer-events-none absolute inset-0 bg-gradient-to-tr from-cyan-400/10 via-white/20 to-emerald-200/25 animate-water-shimmer"></div>
+
+                            <!-- Burbujas semitransparentes ascendiendo lentamente -->
+                            <div class="pointer-events-none absolute inset-0 overflow-hidden">
+                                <span class="absolute left-4 bottom-1 w-2.5 h-2.5 rounded-full border border-white/60 bg-white/30 animate-bubble-rise-1"></span>
+                                <span class="absolute left-1/2 bottom-2 w-3.5 h-3.5 rounded-full border border-white/60 bg-white/25 animate-bubble-rise-2"></span>
+                                <span class="absolute right-5 bottom-0 w-2 h-2 rounded-full border border-white/60 bg-white/30 animate-bubble-rise-3"></span>
+                            </div>
+
+                            <!-- Ráfaga de burbujas adicionales al acertar -->
+                            <div id="m2-extra-bubbles" class="pointer-events-none absolute inset-0 overflow-hidden hidden">
+                                <span class="absolute left-6 bottom-0 w-4 h-4 rounded-full border border-cyan-200 bg-cyan-100/60 animate-bubble-float"></span>
+                                <span class="absolute left-1/3 bottom-1 w-5 h-5 rounded-full border border-cyan-200 bg-cyan-100/60 animate-bubble-float" style="animation-delay: 0.15s"></span>
+                                <span class="absolute right-8 bottom-0 w-3.5 h-3.5 rounded-full border border-cyan-200 bg-cyan-100/60 animate-bubble-float" style="animation-delay: 0.3s"></span>
+                            </div>
+                        </div>
+
+                        <!-- Letras blancas con fondo destacado -->
+                        <div class="flex flex-col items-center gap-1 w-full">
+                            <span class="font-black text-xs sm:text-sm text-white bg-emerald-600 px-3.5 py-1 rounded-full shadow-md flex items-center justify-center gap-1 w-full">
+                                ✨ Río Limpio
+                            </span>
+                            <span class="text-[10px] sm:text-xs font-black text-white bg-emerald-800/90 px-3 py-0.5 rounded-full shadow-xs">
+                                ¡Peces felices y agua clara!
+                            </span>
+                        </div>
+                    </button>
+
+                    <!-- Opción B: Río Sucio -->
+                    <button id="m2-dirty" class="group relative flex-1 max-w-[215px] sm:max-w-[245px] w-full bg-white/90 rounded-3xl p-3 border-4 border-slate-300 shadow-md transition-all duration-300 cursor-pointer flex flex-col items-center text-center active:scale-95 card-tactil-kids">
+                        <div class="w-full h-28 sm:h-36 rounded-2xl overflow-hidden mb-2.5 bg-amber-100 border-2 border-slate-300 relative shadow-inner">
+                            <img id="m2-dirty-img" src="/images/${encodeURIComponent('juego 2 RIO SUCIO.jpeg')}" alt="Río sucio" class="w-full h-full object-cover object-center transition-all duration-300">
+
+                            <!-- Partículas semitransparentes en suspensión oscilando suavemente -->
+                            <div id="m2-dirty-particles" class="pointer-events-none absolute inset-0 overflow-hidden animate-dirty-drift">
+                                <span class="absolute left-6 top-8 w-2 h-1.5 rounded-full bg-amber-950/40"></span>
+                                <span class="absolute left-1/2 top-14 w-2.5 h-1.5 rounded-sm bg-slate-800/40 rotate-12"></span>
+                                <span class="absolute right-7 top-6 w-3 h-2 rounded-full bg-amber-900/35 -rotate-6"></span>
+                                <span class="absolute left-10 bottom-6 w-2 h-2 rounded-sm bg-stone-900/30"></span>
+                            </div>
+                        </div>
+
+                        <!-- Letras blancas con fondo destacado -->
+                        <div class="flex flex-col items-center gap-1 w-full">
+                            <span id="m2-dirty-title" class="font-black text-xs sm:text-sm text-white bg-slate-700 px-3.5 py-1 rounded-full shadow-md flex items-center justify-center gap-1 w-full transition-colors">
+                                ⚠️ Río Contaminado
+                            </span>
+                            <span class="text-[10px] sm:text-xs font-black text-white bg-slate-800/90 px-3 py-0.5 rounded-full shadow-xs">
+                                Basura y peces tristes
+                            </span>
+                        </div>
+                    </button>
+                </div>
+            `;
+
+            const container = document.getElementById('m2-container')!;
+            const cleanBtn = document.getElementById('m2-clean')!;
+            const dirtyBtn = document.getElementById('m2-dirty')!;
+            const pointer = document.getElementById('m2-pointer')!;
+            const cleanImg = document.getElementById('m2-clean-img') as HTMLImageElement;
+            const extraBubbles = document.getElementById('m2-extra-bubbles')!;
+            const rainbow = document.getElementById('m2-rainbow')!;
+            const sparkles = document.getElementById('m2-clean-sparkles')!;
+            const dirtyParticles = document.getElementById('m2-dirty-particles')!;
+            const dirtyTitle = document.getElementById('m2-dirty-title')!;
+
+            let isWon = false;
+            let hasInteracted = false;
+
+            const stopHandPointer = () => {
+                if (m2HandTimeout) {
+                    clearTimeout(m2HandTimeout);
+                    m2HandTimeout = null;
+                }
+                if (cleanBtn) {
+                    cleanBtn.style.transform = '';
+                    cleanBtn.style.boxShadow = '';
+                }
+                if (dirtyBtn) {
+                    dirtyBtn.style.transform = '';
+                    dirtyBtn.style.boxShadow = '';
+                }
+                if (pointer) {
+                    pointer.style.transition = 'opacity 0.25s ease';
+                    pointer.style.opacity = '0';
+                }
+            };
+
+            const resetIdleTimer = () => {
+                if (m2IdleTimer) clearTimeout(m2IdleTimer);
+                if (!isWon) {
+                    m2IdleTimer = setTimeout(() => {
+                        runPointerDemonstration();
+                    }, 7000);
+                }
+            };
+
+            // Efectos suaves al pasar sobre cada imagen
+            cleanBtn.addEventListener('pointerenter', () => {
+                if (!isWon) cleanBtn.style.transform = 'scale(1.06)';
+            });
+            cleanBtn.addEventListener('pointerleave', () => {
+                if (!isWon) cleanBtn.style.transform = '';
+            });
+            dirtyBtn.addEventListener('pointerenter', () => {
+                if (!isWon) dirtyBtn.style.transform = 'scale(1.06)';
+            });
+            dirtyBtn.addEventListener('pointerleave', () => {
+                if (!isWon) dirtyBtn.style.transform = '';
+            });
+
+            // Demostración visual: La mano pasa por cada imagen haciéndola grande y regresándola a su estado normal
+            const runPointerDemonstration = () => {
+                if (isWon || !pointer || !container || !cleanBtn || !dirtyBtn) return;
+
+                stopHandPointer();
+
+                const cRect = container.getBoundingClientRect();
+                const cleanRect = cleanBtn.getBoundingClientRect();
+                const dirtyRect = dirtyBtn.getBoundingClientRect();
+
+                const cleanX = (cleanRect.left + cleanRect.width * 0.5) - cRect.left;
+                const dirtyX = (dirtyRect.left + dirtyRect.width * 0.5) - cRect.left;
+                const cardY = (cleanRect.top + cleanRect.height * 0.5) - cRect.top;
+
+                // 1. Aparece sobre la primera imagen y la hace grande
+                pointer.style.transition = 'none';
+                pointer.style.left = `${cleanX}px`;
+                pointer.style.top = `${cardY}px`;
+                pointer.style.transform = 'translate(-50%, -50%) scale(1.05)';
+                pointer.style.opacity = '0';
+
+                cleanBtn.style.transition = 'transform 0.4s ease, box-shadow 0.4s ease';
+                dirtyBtn.style.transition = 'transform 0.4s ease, box-shadow 0.4s ease';
+
+                requestAnimationFrame(() => {
+                    pointer.style.transition = 'opacity 0.4s ease';
+                    pointer.style.opacity = '1';
+                    cleanBtn.style.transform = 'scale(1.08)';
+                    cleanBtn.style.boxShadow = '0 12px 28px rgba(16,185,129,0.35)';
+
+                    // 2. Se quita el puntero de la primera (vuelve a su estado normal) y se desplaza a la segunda (se hace grande)
+                    m2HandTimeout = setTimeout(() => {
+                        if (isWon) return;
+
+                        cleanBtn.style.transform = '';
+                        cleanBtn.style.boxShadow = '';
+
+                        pointer.style.transition = 'left 1.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease';
+                        pointer.style.left = `${dirtyX}px`;
+
+                        m2HandTimeout = setTimeout(() => {
+                            if (isWon) return;
+
+                            dirtyBtn.style.transform = 'scale(1.08)';
+                            dirtyBtn.style.boxShadow = '0 12px 28px rgba(100,116,139,0.35)';
+
+                            // 3. Quita el puntero, la segunda vuelve a su estado normal y el puntero desaparece suavemente
+                            m2HandTimeout = setTimeout(() => {
+                                if (isWon) return;
+
+                                dirtyBtn.style.transform = '';
+                                dirtyBtn.style.boxShadow = '';
+
+                                const midX = (cleanX + dirtyX) / 2;
+                                pointer.style.transition = 'left 1.1s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease';
+                                pointer.style.left = `${midX}px`;
+                                pointer.style.opacity = '0';
+
+                                m2HandTimeout = setTimeout(() => {
+                                    pointer.style.transition = 'none';
+                                    resetIdleTimer();
+                                }, 500);
+                            }, 1400);
+                        }, 700);
+                    }, 1200);
+                });
+            };
+
+            // Demostración inicial tras presentación
+            setTimeout(() => {
+                if (!hasInteracted && !isWon) {
+                    runPointerDemonstration();
+                }
+            }, 800);
+
+            // Respuesta correcta: Río Limpio
+            cleanBtn.addEventListener('click', () => {
+                if (isWon) return;
+                isWon = true;
+                hasInteracted = true;
+
+                clearMission2Timers();
+                stopHandPointer();
+
+                // 1. Agrandar ligeramente y contorno verde luminoso
+                cleanBtn.classList.add('scale-105', 'ring-4', 'ring-emerald-400', 'border-emerald-400', 'shadow-[0_0_30px_rgba(16,185,129,0.8)]');
+
+                // 2. Aumentar luminosidad del agua suavemente
+                if (cleanImg) {
+                    cleanImg.style.filter = 'brightness(1.18)';
+                }
+
+                // 3. Mostrar burbujas adicionales ascendiendo
+                if (extraBubbles) {
+                    extraBubbles.classList.remove('hidden');
+                }
+
+                // 4. Hacer aparecer pequeño arcoíris sobre la parte superior sin tapar peces
+                if (rainbow) {
+                    rainbow.classList.remove('opacity-0', 'scale-50');
+                    rainbow.classList.add('animate-rainbow-pop');
+                }
+
+                // 5. Destellos dorados durante la celebración
+                if (sparkles) {
+                    sparkles.classList.add('animate-sparkle-burst');
+                }
+
+                // 6. Atenuar ligeramente la tarjeta del río sucio
+                dirtyBtn.classList.add('opacity-40', 'scale-95');
+
+                // 7. Mostrar la estrella de felicitación y reproducir audio final
+                setTimeout(() => {
+                    celebrateMission(MISSIONS[1].successMessage);
+                }, 750);
+            });
+
+            // Respuesta incorrecta: Río Sucio
+            dirtyBtn.addEventListener('click', () => {
+                if (isWon) return;
+                hasInteracted = true;
+                stopHandPointer();
+
+                // 1. Movimiento lateral suave durante 0.4s
+                dirtyBtn.classList.add('animate-gentle-shake');
+
+                // 2. Contorno naranja por un instante
+                dirtyBtn.classList.add('ring-4', 'ring-amber-400', 'border-amber-400');
+                if (dirtyTitle) {
+                    dirtyTitle.classList.remove('bg-slate-700');
+                    dirtyTitle.classList.add('bg-amber-600');
+                }
+
+                // 3. Aumentar brevemente el movimiento de partículas
+                if (dirtyParticles) {
+                    dirtyParticles.style.animationDuration = '1.8s';
+                }
+
+                // 4. Regresar suavemente a la apariencia original y permitir volver a intentar
+                setTimeout(() => {
+                    dirtyBtn.classList.remove('animate-gentle-shake', 'ring-4', 'ring-amber-400', 'border-amber-400');
+                    if (dirtyTitle) {
+                        dirtyTitle.classList.remove('bg-amber-600');
+                        dirtyTitle.classList.add('bg-slate-700');
+                    }
+                    if (dirtyParticles) {
+                        dirtyParticles.style.animationDuration = '6s';
+                    }
+                    resetIdleTimer();
+                }, 450);
+            });
+        }
+
+        // ==========================================
+        // MINI-JUEGO 3: Limpiemos el Huallaga
+        // ==========================================
+        function renderMission3(stage: HTMLElement) {
+            clearAllMissionTimers();
+
+            stage.innerHTML = `
+                <div id="m3-container" class="w-full h-full flex flex-col justify-between items-center relative p-2 overflow-hidden rounded-2xl select-none" style="background-image: url('/images/juego 3 fondo .jpeg'); background-size: cover; background-position: center;">
+                    <div id="m3-water-overlay" class="absolute inset-0 bg-blue-950/25 backdrop-blur-[0.5px] transition-all duration-700"></div>
+
+                    <!-- Puntero animado que muestra cómo llevar un residuo al tacho -->
+                    <div id="m3-pointer" class="pointer-events-none absolute z-40 opacity-0 transition-opacity duration-300">
+                        <img src="/images/juego 1.png" alt="Puntero de ayuda" class="w-12 sm:w-14 h-auto object-contain drop-shadow-2xl rotate-[-10deg]">
+                    </div>
+
+                    <!-- Contador de residuos -->
+                    <div class="relative z-10 bg-white/95 backdrop-blur-sm px-4 py-1.5 rounded-full border border-emerald-300 shadow-md flex items-center gap-2">
+                        <span class="text-xs font-black text-emerald-950">Residuos en el río:</span>
+                        <span id="m3-count" class="font-black text-xs sm:text-sm text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full shadow-xs">3 restantes</span>
+                    </div>
+
+                    <!-- Capa de peces que llenan y nadan por todo el río -->
+                    <div id="m3-fish-layer" class="pointer-events-none absolute inset-0 z-15 overflow-hidden">
+                        <!-- Pez 1 nadando por el río -->
+                        <div class="absolute left-[-60px] top-[18%] animate-fish-drift-1">
+                            <img src="/images/${encodeURIComponent('juego 3 pez 1.png')}" alt="Pez azul" class="w-12 sm:w-16 h-auto object-contain drop-shadow-md">
+                        </div>
+                        <!-- Pez 2 nadando por el río -->
+                        <div class="absolute right-[-60px] top-[32%] animate-fish-drift-2">
+                            <img src="/images/${encodeURIComponent('juego 3 pez 2.png')}" alt="Pez naranja" class="w-12 sm:w-16 h-auto object-contain drop-shadow-md">
+                        </div>
+                        <!-- Pez 3 nadando por el río -->
+                        <div class="absolute left-[-60px] top-[55%] animate-fish-drift-3">
+                            <img src="/images/${encodeURIComponent('juego 3 pez 3.png')}" alt="Pez verde" class="w-11 sm:w-15 h-auto object-contain drop-shadow-md">
+                        </div>
+                        <!-- Pez 4 nadando por el río -->
+                        <div class="absolute right-[-60px] top-[68%] animate-fish-drift-4">
+                            <img src="/images/${encodeURIComponent('juego 3 pez 4.png')}" alt="Pez amarillo" class="w-12 sm:w-16 h-auto object-contain drop-shadow-md">
+                        </div>
+                        <!-- Pez 5 nadando por el río -->
+                        <div class="absolute left-[-60px] top-[42%] animate-fish-drift-5">
+                            <img src="/images/${encodeURIComponent('juego 3 pez 5.png')}" alt="Pez morado" class="w-10 sm:w-14 h-auto object-contain drop-shadow-md">
+                        </div>
+
+                        <!-- Peces celebratorios que emergen al limpiar cada residuo -->
+                        <div id="m3-fish-orange" class="absolute left-[-80px] top-[40%] transition-opacity duration-500 opacity-0">
+                            <img src="/images/${encodeURIComponent('juego 3 pez 2.png')}" alt="Pez naranja feliz" class="w-16 sm:w-20 h-auto object-contain drop-shadow-lg animate-bounce-subtle">
+                        </div>
+                        <div id="m3-fish-blue" class="absolute right-[-80px] top-[25%] transition-opacity duration-500 opacity-0">
+                            <img src="/images/${encodeURIComponent('juego 3 pez 1.png')}" alt="Pez azul feliz" class="w-16 sm:w-20 h-auto object-contain drop-shadow-lg scale-x-[-1] animate-bounce-subtle">
+                        </div>
+                        <div id="m3-fish-green" class="absolute left-[45%] bottom-[-80px] transition-opacity duration-500 opacity-0">
+                            <img src="/images/${encodeURIComponent('juego 3 pez 3.png')}" alt="Pez verde feliz" class="w-15 sm:w-18 h-auto object-contain drop-shadow-lg animate-bounce-subtle">
+                        </div>
+                    </div>
+
+                    <!-- 3 Residuos grandes en el río -->
+                    <div class="relative z-20 w-full flex-1 flex items-center justify-around my-2 px-1 sm:px-3">
+                        <!-- Botella: flota suavemente con giro -->
+                        <button id="m3-trash-bottle" class="cursor-pointer flex flex-col items-center group transition-transform duration-200 active:scale-90 p-1">
+                            <img src="/images/juego 3 botella rio.png" alt="Botella" class="w-20 sm:w-28 h-auto drop-shadow-2xl animate-float-sway transition-all duration-300">
+                        </button>
+
+                        <!-- Bolsa: se balancea como movida por el agua -->
+                        <button id="m3-trash-bag" class="cursor-pointer flex flex-col items-center group transition-transform duration-200 active:scale-90 p-1">
+                            <img src="/images/juego 3 basura.png" alt="Bolsa" class="w-20 sm:w-28 h-auto drop-shadow-2xl animate-bag-wave transition-all duration-300">
+                        </button>
+
+                        <!-- Vaso: sube y baja unos píxeles -->
+                        <button id="m3-trash-cup" class="cursor-pointer flex flex-col items-center group transition-transform duration-200 active:scale-90 p-1">
+                            <img src="/images/juego 3 plastico.png" alt="Vaso plástico" class="w-18 sm:w-24 h-auto drop-shadow-2xl animate-cup-bob transition-all duration-300">
+                        </button>
+                    </div>
+
+                    <!-- Tacho de reciclaje compacto y discreto en la orilla -->
+                    <div id="m3-bin-container" class="relative z-20 flex items-center gap-2 bg-white/95 px-3 py-1 sm:py-1.5 rounded-xl border-2 border-emerald-500 shadow-md cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95">
+                        <img id="m3-bin-img" src="/images/juego 1 tacho cerrado.png" alt="Tacho" class="w-8 sm:w-10 h-auto drop-shadow-sm transition-all duration-300">
+                        <span class="text-[11px] sm:text-xs font-black text-emerald-900 leading-tight">Tacho en la orilla ♻️</span>
+                    </div>
+
+                    <!-- Destellos de celebración final -->
+                    <img id="m3-sparkles" src="/images/juego 1 destellos.png" alt="Destellos" class="pointer-events-none absolute inset-0 m-auto w-48 sm:w-64 h-auto object-contain opacity-0 z-30">
+                </div>
+            `;
+
+            let remaining = 3;
+            let collectedCount = 0;
+            let selectedItem: HTMLElement | null = null;
+            let hasInteracted = false;
+            let m3IdleTimer: any = null;
+            let m3HandTimeout: any = null;
+
+            const container = document.getElementById('m3-container')!;
+            const pointer = document.getElementById('m3-pointer')!;
+            const countEl = document.getElementById('m3-count');
+            const binContainer = document.getElementById('m3-bin-container')!;
+            const binImg = document.getElementById('m3-bin-img') as HTMLImageElement;
+            const waterOverlay = document.getElementById('m3-water-overlay');
+
+            const fishOrange = document.getElementById('m3-fish-orange')!;
+            const fishBlue = document.getElementById('m3-fish-blue')!;
+            const fishGreen = document.getElementById('m3-fish-green')!;
+
+            const stopHandPointer = () => {
+                if (m3HandTimeout) { clearTimeout(m3HandTimeout); m3HandTimeout = null; }
+                if (pointer) { pointer.style.opacity = '0'; }
+            };
+
+            const resetIdleTimer = () => {
+                if (m3IdleTimer) clearTimeout(m3IdleTimer);
+                if (remaining > 0) {
+                    m3IdleTimer = setTimeout(() => { runPointerDemo(); }, 7000);
+                }
+            };
+
+            const runPointerDemo = () => {
+                if (remaining <= 0 || !pointer || !container || !binContainer) return;
+                stopHandPointer();
+
+                const firstItem = document.querySelector('[id^="m3-trash"]:not([data-collected="true"])') as HTMLElement;
+                if (!firstItem) return;
+
+                const cRect = container.getBoundingClientRect();
+                const iRect = firstItem.getBoundingClientRect();
+                const bRect = binContainer.getBoundingClientRect();
+
+                const startX = (iRect.left + iRect.width * 0.5) - cRect.left;
+                const startY = (iRect.top + iRect.height * 0.5) - cRect.top;
+                const targetX = (bRect.left + bRect.width * 0.5) - cRect.left;
+                const targetY = (bRect.top + bRect.height * 0.3) - cRect.top;
+
+                pointer.style.transition = 'none';
+                pointer.style.left = `${startX}px`;
+                pointer.style.top = `${startY}px`;
+                pointer.style.transform = 'translate(-50%, -50%) scale(1.05)';
+                pointer.style.opacity = '0';
+
+                requestAnimationFrame(() => {
+                    pointer.style.transition = 'opacity 0.4s ease';
+                    pointer.style.opacity = '1';
+
+                    m3HandTimeout = setTimeout(() => {
+                        pointer.style.transition = 'left 1.8s cubic-bezier(0.25, 1, 0.5, 1), top 1.8s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease';
+                        pointer.style.left = `${targetX}px`;
+                        pointer.style.top = `${targetY}px`;
+
+                        m3HandTimeout = setTimeout(() => {
+                            pointer.style.opacity = '0';
+                            resetIdleTimer();
+                        }, 2000);
+                    }, 400);
+                });
+            };
+
+            addMissionTimeout(() => {
+                if (!hasInteracted && remaining > 0) runPointerDemo();
+            }, 800);
+
+            // Función para depositar un residuo en el tacho
+            const depositItem = (btn: HTMLElement) => {
+                if (btn.dataset.collected === 'true') return;
+                btn.dataset.collected = 'true';
+                hasInteracted = true;
+                stopHandPointer();
+
+                // Animación de acercarse y entrar en el tacho
+                binImg.src = '/images/juego 1 tacho abierto.png';
+                binContainer.classList.add('scale-110', 'ring-4', 'ring-emerald-400');
+
+                const cRect = container.getBoundingClientRect();
+                const bRect = binContainer.getBoundingClientRect();
+                const iRect = btn.getBoundingClientRect();
+
+                const deltaX = (bRect.left + bRect.width * 0.5) - (iRect.left + iRect.width * 0.5);
+                const deltaY = (bRect.top + bRect.height * 0.3) - (iRect.top + iRect.height * 0.5);
+
+                btn.style.transition = 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease';
+                btn.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(0.25) rotate(25deg)`;
+                btn.style.opacity = '0';
+
+                addMissionTimeout(() => {
+                    btn.classList.add('hidden');
+                    binImg.src = '/images/juego 1 tacho cerrado.png';
+                    binContainer.classList.remove('scale-110', 'ring-4', 'ring-emerald-400');
+                    binContainer.classList.add('animate-bin-jump');
+                    setTimeout(() => { binContainer.classList.remove('animate-bin-jump'); }, 600);
+
+                    remaining--;
+                    collectedCount++;
+
+                    // Actualizar contador
+                    if (countEl) {
+                        countEl.innerText = `${remaining} ${remaining === 1 ? 'restante' : 'restantes'}`;
+                    }
+
+                    // Aparecen los peces correspondientes
+                    if (collectedCount === 1) {
+                        // 1er residuo: Pez naranja desde la izquierda
+                        fishOrange.classList.remove('opacity-0');
+                        fishOrange.classList.add('animate-fish-swim-1');
+                    } else if (collectedCount === 2) {
+                        // 2do residuo: Pez azul desde la derecha
+                        fishBlue.classList.remove('opacity-0');
+                        fishBlue.classList.add('animate-fish-swim-2');
+                    } else if (collectedCount === 3) {
+                        // 3er residuo: Pez verde desde abajo
+                        fishGreen.classList.remove('opacity-0');
+                        fishGreen.classList.add('animate-fish-swim-3');
+                    }
+
+                    // Limpieza completa
+                    if (remaining === 0) {
+                        if (countEl) countEl.innerText = '¡Río limpio! ✨';
+                        if (waterOverlay) {
+                            waterOverlay.style.backgroundColor = 'rgba(56, 189, 248, 0.1)';
+                            waterOverlay.style.filter = 'brightness(1.15)';
+                        }
+
+                        // Los 3 peces se acercan al centro para celebrar
+                        addMissionTimeout(() => {
+                            fishOrange.style.transition = 'all 1s ease';
+                            fishBlue.style.transition = 'all 1s ease';
+                            fishGreen.style.transition = 'all 1s ease';
+                            fishOrange.style.left = '25%';
+                            fishBlue.style.right = '25%';
+                            fishGreen.style.bottom = '35%';
+
+                            const sparkles = document.getElementById('m3-sparkles');
+                            if (sparkles) sparkles.classList.add('animate-sparkle-burst');
+
+                            addMissionTimeout(() => {
+                                celebrateMission(MISSIONS[2].successMessage);
+                            }, 800);
+                        }, 600);
+                    } else {
+                        resetIdleTimer();
+                    }
+                }, 600);
+            };
+
+            const setupTrashItem = (btn: HTMLElement) => {
+                btn.addEventListener('click', () => {
+                    hasInteracted = true;
+                    stopHandPointer();
+
+                    // Brillo blanco y aumento ligero al tocar
+                    const img = btn.querySelector('img');
+                    if (img) {
+                        img.style.filter = 'drop-shadow(0 0 16px rgba(255, 255, 255, 0.95)) brightness(1.2)';
+                        img.style.transform = 'scale(1.15)';
+                    }
+
+                    // Tacho se ilumina y abre su tapa
+                    binImg.src = '/images/juego 1 tacho abierto.png';
+                    binContainer.classList.add('scale-105', 'ring-2', 'ring-emerald-400');
+
+                    addMissionTimeout(() => {
+                        depositItem(btn);
+                    }, 350);
+                });
+            };
+
+            const b1 = document.getElementById('m3-trash-bottle');
+            const b2 = document.getElementById('m3-trash-bag');
+            const b3 = document.getElementById('m3-trash-cup');
+            if (b1) setupTrashItem(b1);
+            if (b2) setupTrashItem(b2);
+            if (b3) setupTrashItem(b3);
+        }
+
+        // ==========================================
+        // MINI-JUEGO 4: ¿Basura o naturaleza?
+        // ==========================================
+        function renderMission4(stage: HTMLElement) {
+            clearAllMissionTimers();
+
+            stage.innerHTML = `
+                <div id="m4-container" class="w-full h-full flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-4 p-2 select-none relative overflow-hidden">
+                
+                    
+                    <!-- Puntero animado que recorre las tres opciones sin indicar la correcta -->
+                    <div id="m4-pointer" class="pointer-events-none absolute z-40 opacity-0 transition-opacity duration-300">
+                        <img src="/images/juego 1.png" alt="Puntero de ayuda" class="w-12 sm:w-14 h-auto object-contain drop-shadow-2xl rotate-[-10deg]">
+                    </div>
+
+                    <!-- 1: Botella (Correcta) -->
+                    <button id="m4-bottle" class="group relative flex-1 max-w-[155px] sm:max-w-[185px] w-full bg-white/95 rounded-3xl p-2.5 sm:p-3 border-4 border-slate-300 shadow-lg transition-all duration-500 cursor-pointer flex flex-col items-center active:scale-95 card-tactil-kids" style="order: 1;">
+                        <div class="w-full h-28 sm:h-36 rounded-2xl overflow-hidden bg-slate-100 relative shadow-inner">
+                            <img src="/images/juego 4 botella .jpeg" alt="Botella" class="w-full h-full object-cover animate-bottle-sway group-hover:scale-105 transition-transform">
+                        </div>
+                    </button>
+
+                    <!-- 2: Pez -->
+                    <button id="m4-fish" class="group relative flex-1 max-w-[155px] sm:max-w-[185px] w-full bg-white/95 rounded-3xl p-2.5 sm:p-3 border-4 border-slate-300 shadow-lg transition-all duration-500 cursor-pointer flex flex-col items-center active:scale-95 card-tactil-kids" style="order: 2;">
+                        <div class="w-full h-28 sm:h-36 rounded-2xl overflow-hidden bg-slate-100 relative shadow-inner">
+                            <img src="/images/juego 4 bagrre.jpeg" alt="Pez bagre" class="w-full h-full object-cover animate-fish-swimming group-hover:scale-105 transition-transform">
+                        </div>
+                    </button>
+
+                    <!-- 3: Algas -->
+                    <button id="m4-algae" class="group relative flex-1 max-w-[155px] sm:max-w-[185px] w-full bg-white/95 rounded-3xl p-2.5 sm:p-3 border-4 border-slate-300 shadow-lg transition-all duration-500 cursor-pointer flex flex-col items-center active:scale-95 card-tactil-kids" style="order: 3;">
+                        <div class="w-full h-28 sm:h-36 rounded-2xl overflow-hidden bg-slate-100 relative shadow-inner">
+                            <img src="/images/juego 4 algas, .jpeg" alt="Algas" class="w-full h-full object-cover animate-algae-sway group-hover:scale-105 transition-transform">
+                        </div>
+                    </button>
+
+                    <!-- Mini tacho de reciclaje para la animación correcta -->
+                    <div id="m4-recycle-bin" class="pointer-events-none absolute bottom-2 right-4 opacity-0 scale-50 transition-all duration-500 z-30 flex items-center gap-1.5 bg-white/95 px-3 py-1.5 rounded-2xl border-2 border-emerald-500 shadow-xl">
+                        <img src="/images/juego 1 tacho abierto.png" alt="Tacho" class="w-10 h-auto">
+                        <span class="text-xs font-black text-emerald-800">¡Al reciclaje! ♻️</span>
+                    </div>
+
+                    <!-- Destellos de celebración -->
+                    <img id="m4-sparkles" src="/images/juego 1 destellos.png" alt="Destellos" class="pointer-events-none absolute inset-0 m-auto w-40 sm:w-56 h-auto object-contain opacity-0 z-30">
+                </div>
+            `;
+
+            const container = document.getElementById('m4-container')!;
+            const btnBottle = document.getElementById('m4-bottle')!;
+            const btnFish = document.getElementById('m4-fish')!;
+            const btnAlgae = document.getElementById('m4-algae')!;
+            const pointer = document.getElementById('m4-pointer')!;
+            const recycleBin = document.getElementById('m4-recycle-bin')!;
+            const sparkles = document.getElementById('m4-sparkles')!;
+
+            let isWon = false;
+            let hasInteracted = false;
+            let m4IdleTimer: any = null;
+            let m4HandTimeout: any = null;
+
+            // Intercambiar posiciones cada 3 segundos para que sea más dinámico y animado
+            const cards = [btnBottle, btnFish, btnAlgae];
+            let currentOrders = [1, 2, 3];
+            const shuffleCards = () => {
+                if (isWon) return;
+                currentOrders.unshift(currentOrders.pop()!);
+                cards.forEach((card, idx) => {
+                    card.style.order = `${currentOrders[idx]}`;
+                    card.classList.add('scale-95');
+                    setTimeout(() => {
+                        card.classList.remove('scale-95');
+                    }, 250);
+                });
+            };
+            const shuffleInterval = setInterval(shuffleCards, 3000);
+            activeMissionTimeouts.push(shuffleInterval);
+
+            const stopHandPointer = () => {
+                if (m4HandTimeout) { clearTimeout(m4HandTimeout); m4HandTimeout = null; }
+                if (pointer) pointer.style.opacity = '0';
+            };
+
+            const resetIdleTimer = () => {
+                if (m4IdleTimer) clearTimeout(m4IdleTimer);
+                if (!isWon) {
+                    m4IdleTimer = setTimeout(() => { runPointerDemo(); }, 7000);
+                }
+            };
+
+            const runPointerDemo = () => {
+                if (isWon || !pointer || !container) return;
+                stopHandPointer();
+
+                // Ordenar las tarjetas visualmente de izquierda a derecha según su posición actual en pantalla
+                const sortedCards = [...cards].sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+                const cRect = container.getBoundingClientRect();
+                const r1 = sortedCards[0].getBoundingClientRect();
+                const r2 = sortedCards[1].getBoundingClientRect();
+                const r3 = sortedCards[2].getBoundingClientRect();
+
+                const x1 = (r1.left + r1.width * 0.5) - cRect.left;
+                const x2 = (r2.left + r2.width * 0.5) - cRect.left;
+                const x3 = (r3.left + r3.width * 0.5) - cRect.left;
+                const y = (r1.top + r1.height * 0.5) - cRect.top;
+
+                pointer.style.transition = 'none';
+                pointer.style.left = `${x1}px`;
+                pointer.style.top = `${y}px`;
+                pointer.style.opacity = '0';
+
+                requestAnimationFrame(() => {
+                    pointer.style.transition = 'opacity 0.4s ease';
+                    pointer.style.opacity = '1';
+
+                    m4HandTimeout = setTimeout(() => {
+                        pointer.style.transition = 'left 1.2s cubic-bezier(0.25, 1, 0.5, 1)';
+                        pointer.style.left = `${x2}px`;
+
+                        m4HandTimeout = setTimeout(() => {
+                            pointer.style.left = `${x3}px`;
+                            m4HandTimeout = setTimeout(() => {
+                                pointer.style.opacity = '0';
+                                resetIdleTimer();
+                            }, 1300);
+                        }, 1300);
+                    }, 400);
+                });
+            };
+
+            addMissionTimeout(() => {
+                if (!hasInteracted && !isWon) runPointerDemo();
+            }, 800);
+
+            // Respuesta correcta: Botella
+            btnBottle.addEventListener('click', () => {
+                if (isWon) return;
+                isWon = true;
+                hasInteracted = true;
+                stopHandPointer();
+
+                btnBottle.classList.remove('border-slate-300');
+                btnBottle.classList.add('scale-105', 'ring-4', 'ring-emerald-400', 'border-emerald-400', 'shadow-[0_0_25px_rgba(16,185,129,0.8)]');
+
+                // Tacho de reciclaje aparece y recibe la botella
+                recycleBin.classList.remove('opacity-0', 'scale-50');
+                recycleBin.classList.add('opacity-100', 'scale-100');
+
+                if (sparkles) sparkles.classList.add('animate-sparkle-burst');
+
+                addMissionTimeout(() => {
+                    celebrateMission(MISSIONS[3].successMessage);
+                }, 800);
+            });
+
+            // Respuesta incorrecta suave: Pez o Planta
+            const handleWrongAnswer = (btn: HTMLElement) => {
+                if (isWon) return;
+                hasInteracted = true;
+                stopHandPointer();
+
+                btn.classList.add('animate-gentle-shake', 'ring-4', 'ring-amber-400', 'border-amber-400');
+                addMissionTimeout(() => {
+                    btn.classList.remove('animate-gentle-shake', 'ring-4', 'ring-amber-400', 'border-amber-400');
+                    resetIdleTimer();
+                }, 450);
+            };
+
+            btnFish.addEventListener('click', () => handleWrongAnswer(btnFish));
+            btnAlgae.addEventListener('click', () => handleWrongAnswer(btnAlgae));
+        }
+
+        // ==========================================
+        // MINI-JUEGO 5: ¿Está bien hacerlo?
+        // ==========================================
+        function renderMission5(stage: HTMLElement) {
+            clearAllMissionTimers();
+
+            stage.innerHTML = `
+                <div id="m5-container" class="w-full h-full flex flex-col items-center justify-between p-2 select-none relative overflow-hidden rounded-3xl">
+                    
+                    <!-- Puntero animado entre los botones 👍 y 👎 -->
+                    <div id="m5-pointer" class="pointer-events-none absolute z-50 opacity-0 transition-opacity duration-300">
+                        <img src="/images/juego 1.png" alt="Puntero de ayuda" class="w-12 sm:w-14 h-auto object-contain drop-shadow-2xl rotate-[-10deg]">
+                    </div>
+
+                    <!-- Escena por capas: fondo y elementos entran en secuencia cada cinco segundos -->
+                    <div id="m5-scene-area" class="m5-scene relative w-full max-w-[420px] sm:max-w-[460px] flex-1 min-h-[190px] sm:min-h-[230px] max-h-[260px] sm:max-h-[300px] my-auto rounded-3xl overflow-hidden border-4 border-white shadow-xl bg-white/95">
+                        <img src="/images/juego 5 fondito.png" alt="Río limpio" class="absolute inset-0 w-full h-full object-cover">
+                        <img src="/images/juego 5 niña.png" alt="Niña junto al río" class="m5-scene-layer m5-girl absolute z-10 w-[39%] h-[88%] object-contain right-[8%] bottom-[17%]">
+                        <img src="/images/juego 5 señal.png" alt="Mantengamos limpio el río" class="m5-scene-layer m5-sign absolute z-10 w-[15%] h-[45%] object-contain right-[2%] bottom-[16%]">
+                        <img src="/images/juego 5 pez 2.png" alt="Pez naranja" class="m5-scene-layer m5-fish-one absolute z-10 w-[18%] h-[38%] object-contain left-[8%] bottom-[5%]">
+                        <img src="/images/juego 5 pez.png" alt="Pez azul" class="m5-scene-layer m5-fish-two absolute z-10 w-[17%] h-[36%] object-contain left-[27%] bottom-[4%]">
+                        <img src="/images/juego 5 tortuga.png" alt="Tortuga" class="m5-scene-layer m5-turtle absolute z-10 w-[17%] h-[40%] object-contain left-[46%] bottom-[-2%]">
+                        <img src="/images/juego 5 pato.png" alt="Patito" class="m5-scene-layer m5-duck absolute z-10 w-[14%] h-[32%] object-contain left-[66%] bottom-[3%]">
+                        <img src="/images/juego 5 botella que tira.png" alt="Botella volando desde la mano de la niña hacia el río" class="m5-scene-layer m5-bottle absolute z-20 w-[10%] h-[25%] object-contain left-[50%] top-[43%]">
+
+                        <!-- Destellos dorados en celebración -->
+                        <img id="m5-sparkles" src="/images/juego 1 destellos.png" alt="Destellos" class="pointer-events-none absolute inset-0 m-auto w-48 sm:w-64 h-auto object-contain opacity-0 z-30">
+                    </div>
+
+                    <!-- Botones de Interacción 👍 y 👎 -->
+                    <div id="m5-buttons-container" class="flex items-center justify-center gap-4 sm:gap-7 w-full pb-1 z-30 shrink-0">
+                        <!-- Botón: Está bien 👍 -->
+                        <button id="m5-thumbs-up" class="group flex flex-col items-center p-2 sm:p-2.5 bg-white/95 hover:bg-slate-50 rounded-2xl sm:rounded-3xl border-3 border-slate-300 shadow-xl active:scale-95 transition-all cursor-pointer min-w-[125px] sm:min-w-[145px] card-tactil-kids">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden p-1 bg-white flex items-center justify-center">
+                                <img src="/images/${encodeURIComponent('juego 5 pulgar arriba.png')}" alt="Está bien" class="w-full h-full object-contain">
+                            </div>
+                            <span class="font-black text-xs sm:text-sm text-slate-800 mt-1">Está bien 👍</span>
+                        </button>
+
+                        <!-- Botón: Está mal 👎 (Respuesta correcta) -->
+                        <button id="m5-thumbs-down" class="group flex flex-col items-center p-2 sm:p-2.5 bg-rose-50/95 hover:bg-rose-100 rounded-2xl sm:rounded-3xl border-3 border-rose-300 ring-2 ring-rose-200 shadow-xl active:scale-95 transition-all cursor-pointer min-w-[125px] sm:min-w-[145px] card-tactil-kids">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden p-1 bg-white flex items-center justify-center">
+                                <img src="/images/juego 5 pulgar abajo.png" alt="Está mal" class="w-full h-full object-contain">
+                            </div>
+                            <span class="font-black text-xs sm:text-sm text-rose-700 mt-1">Está mal 👎</span>
+                        </button>
+                    </div>
+
+                </div>
+            `;
+
+            const container = document.getElementById('m5-container')!;
+            const btnThumbsDown = document.getElementById('m5-thumbs-down')!;
+            const btnThumbsUp = document.getElementById('m5-thumbs-up')!;
+            const pointer = document.getElementById('m5-pointer')!;
+            const sparkles = document.getElementById('m5-sparkles')!;
+
+            let isWon = false;
+            let hasInteracted = false;
+            let m5IdleTimer: any = null;
+            let m5HandTimeout: any = null;
+
+            const stopHandPointer = () => {
+                if (m5HandTimeout) { clearTimeout(m5HandTimeout); m5HandTimeout = null; }
+                if (pointer) pointer.style.opacity = '0';
+            };
+
+            const resetIdleTimer = () => {
+                if (m5IdleTimer) clearTimeout(m5IdleTimer);
+                if (!isWon) {
+                    m5IdleTimer = setTimeout(() => { runPointerDemo(); }, 7000);
+                }
+            };
+
+            const runPointerDemo = () => {
+                if (isWon || !pointer || !container) return;
+                stopHandPointer();
+
+                const cRect = container.getBoundingClientRect();
+                const r1 = btnThumbsUp.getBoundingClientRect();
+                const r2 = btnThumbsDown.getBoundingClientRect();
+
+                const x1 = (r1.left + r1.width * 0.5) - cRect.left;
+                const x2 = (r2.left + r2.width * 0.5) - cRect.left;
+                const y = (r1.top + r1.height * 0.5) - cRect.top;
+
+                pointer.style.transition = 'none';
+                pointer.style.left = `${x1}px`;
+                pointer.style.top = `${y}px`;
+                pointer.style.opacity = '0';
+
+                requestAnimationFrame(() => {
+                    pointer.style.transition = 'opacity 0.4s ease';
+                    pointer.style.opacity = '1';
+
+                    m5HandTimeout = setTimeout(() => {
+                        pointer.style.transition = 'left 1.4s cubic-bezier(0.25, 1, 0.5, 1)';
+                        pointer.style.left = `${x2}px`;
+
+                        m5HandTimeout = setTimeout(() => {
+                            pointer.style.opacity = '0';
+                            resetIdleTimer();
+                        }, 1600);
+                    }, 400);
+                });
+            };
+
+            addMissionTimeout(() => {
+                if (!hasInteracted && !isWon) runPointerDemo();
+            }, 800);
+
+            // Respuesta correcta: "Está mal 👎" (tirar basura al río está mal)
+            btnThumbsDown.addEventListener('click', () => {
+                if (isWon) return;
+                isWon = true;
+                hasInteracted = true;
+                stopHandPointer();
+
+                btnThumbsDown.classList.remove('border-rose-300', 'ring-rose-200');
+                btnThumbsDown.classList.add('scale-105', 'ring-4', 'ring-emerald-400', 'border-emerald-500', 'shadow-[0_0_25px_rgba(16,185,129,0.8)]');
+
+                if (sparkles) sparkles.classList.add('animate-sparkle-burst');
+
+                addMissionTimeout(() => {
+                    celebrateMission(MISSIONS[4].successMessage);
+                }, 750);
+            });
+
+            // Respuesta incorrecta suave: "Está bien 👍"
+            btnThumbsUp.addEventListener('click', () => {
+                if (isWon) return;
+                hasInteracted = true;
+                stopHandPointer();
+
+                btnThumbsUp.classList.add('animate-gentle-shake', 'ring-4', 'ring-amber-400', 'border-amber-400');
+                addMissionTimeout(() => {
+                    btnThumbsUp.classList.remove('animate-gentle-shake', 'ring-4', 'ring-amber-400', 'border-amber-400');
+                    resetIdleTimer();
+                }, 450);
+            });
+        }
+
+        // ==========================================
+        // MINI-JUEGO 6: ¿Quién cuida el río?
+        // ==========================================
+        function renderMission6(stage: HTMLElement) {
+            clearAllMissionTimers();
+
+            stage.innerHTML = `
+                <div id="m6-container" class="w-full h-full flex flex-col items-center justify-between p-2 select-none relative overflow-hidden">
+                    
+                    <!-- Puntero animado entre las dos tarjetas -->
+                    <div id="m6-pointer" class="pointer-events-none absolute z-50 opacity-0 transition-opacity duration-300">
+                        <img src="/images/juego 1.png" alt="Puntero de ayuda" class="w-12 sm:w-14 h-auto object-contain drop-shadow-2xl rotate-[-10deg]">
+                    </div>
+
+                    <!-- 1. Imagen principal de situación destacada en el centro superior con protagonismo -->
+                    <div class="w-full max-w-[420px] sm:max-w-[460px] h-36 sm:h-44 rounded-3xl overflow-hidden border-4 border-white shadow-2xl bg-white/95 my-auto shrink-0 transition-transform duration-300">
+                        <img src="/images/juego 6.jpeg" alt="Situación en el río" class="w-full h-full object-cover">
+                    </div>
+
+                    <!-- 2. Dos tarjetas de selección con personajes completos y texto simple -->
+                    <div class="w-full flex items-center justify-center gap-3 sm:gap-6 my-auto">
+                        <!-- Izquierda: Niño recogiendo la basura (Correcto) -->
+                        <button id="m6-boy" class="group relative flex-1 max-w-[155px] sm:max-w-[185px] w-full bg-white/95 rounded-3xl p-2.5 border-4 border-slate-300 shadow-xl transition-all duration-300 cursor-pointer flex flex-col items-center text-center active:scale-95 card-tactil-kids">
+                            <div class="w-full h-24 sm:h-32 rounded-2xl overflow-hidden mb-1 flex items-center justify-center">
+                                <img src="/images/${encodeURIComponent('juego 6 niÑo.png')}" alt="Niño" class="w-full h-full object-contain animate-float drop-shadow-md">
+                            </div>
+                            <span class="font-black text-xs sm:text-sm text-white bg-emerald-600 px-4 py-0.5 rounded-full shadow-xs">Niño</span>
+                        </button>
+
+                        <!-- Derecha: Niña arrojando la botella -->
+                        <button id="m6-girl" class="group relative flex-1 max-w-[155px] sm:max-w-[185px] w-full bg-white/95 rounded-3xl p-2.5 border-4 border-slate-300 shadow-xl transition-all duration-300 cursor-pointer flex flex-col items-center text-center active:scale-95 card-tactil-kids">
+                            <div class="w-full h-24 sm:h-32 rounded-2xl overflow-hidden mb-1 flex items-center justify-center">
+                                <img src="/images/${encodeURIComponent('juego 6 niña.png')}" alt="Niña" class="w-full h-full object-contain animate-float drop-shadow-md">
+                            </div>
+                            <span class="font-black text-xs sm:text-sm text-white bg-slate-700 px-4 py-0.5 rounded-full shadow-xs">Niña</span>
+                        </button>
+                    </div>
+
+                    <!-- Destellos de celebración -->
+                    <img id="m6-sparkles" src="/images/juego 1 destellos.png" alt="Destellos" class="pointer-events-none absolute inset-0 m-auto w-44 sm:w-60 h-auto object-contain opacity-0 z-30">
+                </div>
+            `;
+
+            const container = document.getElementById('m6-container')!;
+            const btnBoy = document.getElementById('m6-boy')!;
+            const btnGirl = document.getElementById('m6-girl')!;
+            const pointer = document.getElementById('m6-pointer')!;
+            const sparkles = document.getElementById('m6-sparkles')!;
+
+            let isWon = false;
+            let hasInteracted = false;
+            let m6IdleTimer: any = null;
+            let m6HandTimeout: any = null;
+
+            const stopHandPointer = () => {
+                if (m6HandTimeout) { clearTimeout(m6HandTimeout); m6HandTimeout = null; }
+                if (pointer) pointer.style.opacity = '0';
+            };
+
+            const resetIdleTimer = () => {
+                if (m6IdleTimer) clearTimeout(m6IdleTimer);
+                if (!isWon) {
+                    m6IdleTimer = setTimeout(() => { runPointerDemo(); }, 7000);
+                }
+            };
+
+            const runPointerDemo = () => {
+                if (isWon || !pointer || !container) return;
+                stopHandPointer();
+
+                const cRect = container.getBoundingClientRect();
+                const r1 = btnBoy.getBoundingClientRect();
+                const r2 = btnGirl.getBoundingClientRect();
+
+                const x1 = (r1.left + r1.width * 0.5) - cRect.left;
+                const x2 = (r2.left + r2.width * 0.5) - cRect.left;
+                const y = (r1.top + r1.height * 0.5) - cRect.top;
+
+                pointer.style.transition = 'none';
+                pointer.style.left = `${x1}px`;
+                pointer.style.top = `${y}px`;
+                pointer.style.opacity = '0';
+
+                requestAnimationFrame(() => {
+                    pointer.style.transition = 'opacity 0.4s ease';
+                    pointer.style.opacity = '1';
+
+                    m6HandTimeout = setTimeout(() => {
+                        pointer.style.transition = 'left 1.4s cubic-bezier(0.25, 1, 0.5, 1)';
+                        pointer.style.left = `${x2}px`;
+
+                        m6HandTimeout = setTimeout(() => {
+                            pointer.style.opacity = '0';
+                            resetIdleTimer();
+                        }, 1600);
+                    }, 400);
+                });
+            };
+
+            addMissionTimeout(() => {
+                if (!hasInteracted && !isWon) runPointerDemo();
+            }, 800);
+
+            // Respuesta correcta: Niño
+            btnBoy.addEventListener('click', () => {
+                if (isWon) return;
+                isWon = true;
+                hasInteracted = true;
+                stopHandPointer();
+
+                btnBoy.classList.add('scale-105', 'ring-4', 'ring-emerald-400', 'border-emerald-400', 'shadow-[0_0_25px_rgba(16,185,129,0.8)]');
+                btnGirl.classList.add('opacity-40', 'scale-95');
+
+                if (sparkles) sparkles.classList.add('animate-sparkle-burst');
+
+                addMissionTimeout(() => {
+                    celebrateMission(MISSIONS[5].successMessage);
+                }, 800);
+            });
+
+            // Respuesta incorrecta: Niña
+            btnGirl.addEventListener('click', () => {
+                if (isWon) return;
+                hasInteracted = true;
+                stopHandPointer();
+
+                btnGirl.classList.add('animate-gentle-shake', 'ring-4', 'ring-amber-400', 'border-amber-400');
+                addMissionTimeout(() => {
+                    btnGirl.classList.remove('animate-gentle-shake', 'ring-4', 'ring-amber-400', 'border-amber-400');
+                    resetIdleTimer();
+                }, 450);
+            });
+        }
+
+        // ==========================================
+        // MINI-JUEGO 7: Ayuda al bagre
+        // ==========================================
+        function renderMission7(stage: HTMLElement) {
+            clearAllMissionTimers();
+
+            stage.innerHTML = `
+                <div id="m7-container" class="w-full h-full flex flex-col items-center justify-between p-2 select-none relative overflow-hidden">
+                    
+                    <!-- Puntero animado entre las dos opciones -->
+                    <div id="m7-pointer" class="pointer-events-none absolute z-50 opacity-0 transition-opacity duration-300">
+                        <img src="/images/juego 1.png" alt="Puntero de ayuda" class="w-12 sm:w-14 h-auto object-contain drop-shadow-2xl rotate-[-10deg]">
+                    </div>
+
+                    <!-- Mascota Bagre más grande, animada y con alto protagonismo -->
+                    <div id="m7-bagre" class="flex flex-col items-center z-20 cursor-pointer animate-float my-1 shrink-0">
+                        <img id="m7-bagre-img" src="/images/saluda.png" alt="Amigo bagre" class="w-24 sm:w-32 h-auto object-contain drop-shadow-2xl transition-transform duration-300">
+                        <span class="text-xs sm:text-sm font-black text-white bg-emerald-800/95 px-4 py-1 rounded-full border-2 border-emerald-400 shadow-md mt-1">¡Ayuda a nuestro Amigo Bagre!</span>
+                    </div>
+
+                    <!-- Dos opciones que intercalan tamaño automáticamente cada 3 segundos -->
+                    <div class="w-full flex items-center justify-center gap-3.5 sm:gap-6 my-auto">
+                        <!-- Río Limpio (Correcto) -->
+                        <button id="m7-clean" class="group flex-1 max-w-[205px] sm:max-w-[235px] w-full bg-white/95 rounded-3xl p-3 border-4 border-slate-300 shadow-xl transition-all duration-500 cursor-pointer flex flex-col items-center active:scale-95 card-tactil-kids">
+                            <div class="w-full h-28 sm:h-36 rounded-2xl overflow-hidden mb-2 bg-emerald-100 shadow-inner">
+                            <img src="/images/${encodeURIComponent('juego 7 imagen rio sucio .jpeg')}" alt="Río limpio" class="w-full h-full object-cover">
+                            </div>
+                            <span class="font-black text-xs sm:text-sm text-white bg-emerald-600 px-4 py-1 rounded-full shadow-xs">🏡 Río Limpio</span>
+                        </button>
+
+                        <!-- Río Contaminado -->
+                        <button id="m7-dirty" class="group flex-1 max-w-[205px] sm:max-w-[235px] w-full bg-white/95 rounded-3xl p-3 border-4 border-slate-300 shadow-xl transition-all duration-500 cursor-pointer flex flex-col items-center active:scale-95 card-tactil-kids">
+                            <div class="w-full h-28 sm:h-36 rounded-2xl overflow-hidden mb-2 bg-slate-100 shadow-inner">
+                            <img src="/images/${encodeURIComponent('juego 7  imagen rio sucio.jpeg')}" alt="Río sucio" class="w-full h-full object-cover">
+                            </div>
+                            <span class="font-black text-xs sm:text-sm text-white bg-slate-700 px-4 py-1 rounded-full shadow-xs">🚫 Río Sucio</span>
+                        </button>
+                    </div>
+
+                    <!-- Destellos de celebración -->
+                    <img id="m7-sparkles" src="/images/juego 1 destellos.png" alt="Destellos" class="pointer-events-none absolute inset-0 m-auto w-44 sm:w-60 h-auto object-contain opacity-0 z-30">
+                </div>
+            `;
+
+            const container = document.getElementById('m7-container')!;
+            const btnClean = document.getElementById('m7-clean')!;
+            const btnDirty = document.getElementById('m7-dirty')!;
+            const pointer = document.getElementById('m7-pointer')!;
+            const sparkles = document.getElementById('m7-sparkles')!;
+            const bagreImg = document.getElementById('m7-bagre-img')!;
+
+            let isWon = false;
+            let hasInteracted = false;
+            let m7IdleTimer: any = null;
+            let m7HandTimeout: any = null;
+            let m7AlternateStep = 0; // 0: limpia, 1: sucia
+
+            const stopHandPointer = () => {
+                if (m7HandTimeout) { clearTimeout(m7HandTimeout); m7HandTimeout = null; }
+                if (pointer) pointer.style.opacity = '0';
+            };
+
+            const resetIdleTimer = () => {
+                if (m7IdleTimer) clearTimeout(m7IdleTimer);
+                if (!isWon) {
+                    m7IdleTimer = setTimeout(() => { runAlternatingZoom(); }, 7000);
+                }
+            };
+
+            // Efectos de hover suave
+            btnClean.addEventListener('pointerenter', () => { if (!isWon) btnClean.style.transform = 'scale(1.06)'; });
+            btnClean.addEventListener('pointerleave', () => { if (!isWon && m7AlternateStep !== 0) btnClean.style.transform = ''; });
+            btnDirty.addEventListener('pointerenter', () => { if (!isWon) btnDirty.style.transform = 'scale(1.06)'; });
+            btnDirty.addEventListener('pointerleave', () => { if (!isWon && m7AlternateStep !== 1) btnDirty.style.transform = ''; });
+
+            // Ni bien aparece, automáticamente se hace grande cada 3 segundos e intercala entre ambas imágenes con el puntero
+            const runAlternatingZoom = () => {
+                if (isWon || !container || !btnClean || !dirtyBtnActive()) return;
+
+                const cRect = container.getBoundingClientRect();
+                const cleanRect = btnClean.getBoundingClientRect();
+                const dirtyRect = btnDirty.getBoundingClientRect();
+
+                if (m7AlternateStep === 0) {
+                    // Turno de Río Limpio: Se hace grande
+                    btnDirty.style.transform = '';
+                    btnDirty.style.boxShadow = '';
+                    btnClean.style.transform = 'scale(1.08)';
+                    btnClean.style.boxShadow = '0 12px 28px rgba(16,185,129,0.35)';
+
+                    if (!hasInteracted && pointer) {
+                        const cleanX = (cleanRect.left + cleanRect.width * 0.5) - cRect.left;
+                        const cardY = (cleanRect.top + cleanRect.height * 0.5) - cRect.top;
+                        pointer.style.transition = 'left 0.6s cubic-bezier(0.25, 1, 0.5, 1), top 0.6s ease, opacity 0.3s ease';
+                        pointer.style.left = `${cleanX}px`;
+                        pointer.style.top = `${cardY}px`;
+                        pointer.style.opacity = '1';
+                    }
+
+                    m7AlternateStep = 1;
+                } else {
+                    // Turno de Río Sucio: Se hace grande
+                    btnClean.style.transform = '';
+                    btnClean.style.boxShadow = '';
+                    btnDirty.style.transform = 'scale(1.08)';
+                    btnDirty.style.boxShadow = '0 12px 28px rgba(100,116,139,0.35)';
+
+                    if (!hasInteracted && pointer) {
+                        const dirtyX = (dirtyRect.left + dirtyRect.width * 0.5) - cRect.left;
+                        const cardY = (dirtyRect.top + dirtyRect.height * 0.5) - cRect.top;
+                        pointer.style.transition = 'left 0.6s cubic-bezier(0.25, 1, 0.5, 1), top 0.6s ease, opacity 0.3s ease';
+                        pointer.style.left = `${dirtyX}px`;
+                        pointer.style.top = `${cardY}px`;
+                        pointer.style.opacity = '1';
+                    }
+
+                    m7AlternateStep = 0;
+                }
+            };
+
+            const dirtyBtnActive = () => btnDirty && !isWon;
+
+            // Iniciar ciclo automático cada 3 segundos
+            const m7Interval = setInterval(runAlternatingZoom, 3000);
+            activeMissionTimeouts.push(m7Interval);
+
+            // Activar primer zoom inmediatamente al aparecer
+            setTimeout(() => {
+                if (!isWon) runAlternatingZoom();
+            }, 400);
+
+            // Correcto: Río Limpio
+            btnClean.addEventListener('click', () => {
+                if (isWon) return;
+                isWon = true;
+                hasInteracted = true;
+                stopHandPointer();
+                clearInterval(m7Interval);
+
+                btnClean.style.transform = 'scale(1.08)';
+                btnClean.classList.add('ring-4', 'ring-emerald-400', 'border-emerald-400', 'shadow-[0_0_25px_rgba(16,185,129,0.8)]');
+                btnDirty.style.transform = 'scale(0.95)';
+                btnDirty.classList.add('opacity-40');
+
+                if (bagreImg) {
+                    bagreImg.classList.add('animate-bin-jump');
+                }
+
+                if (sparkles) sparkles.classList.add('animate-sparkle-burst');
+
+                addMissionTimeout(() => {
+                    celebrateMission(MISSIONS[6].successMessage);
+                }, 800);
+            });
+
+            // Incorrecto: Río Sucio
+            btnDirty.addEventListener('click', () => {
+                if (isWon) return;
+                hasInteracted = true;
+                stopHandPointer();
+
+                btnDirty.classList.add('animate-gentle-shake', 'ring-4', 'ring-amber-400', 'border-amber-400');
+                addMissionTimeout(() => {
+                    btnDirty.classList.remove('animate-gentle-shake', 'ring-4', 'ring-amber-400', 'border-amber-400');
+                    resetIdleTimer();
+                }, 450);
+            });
+        }
+
+        // ==========================================
+        // MINI-JUEGO 8: Cada cosa en su lugar
+        // ==========================================
+        function renderMission8(stage: HTMLElement) {
+            clearAllMissionTimers();
+
+            stage.innerHTML = `
+                <div id="m8-container" class="w-full h-full flex flex-col items-center justify-between p-2 select-none relative overflow-hidden">
+                    
+                    <!-- Puntero animado que recorre los cuatro tachos -->
+                    <div id="m8-pointer" class="pointer-events-none absolute z-50 opacity-0 transition-opacity duration-300">
+                        <img src="/images/juego 1.png" alt="Puntero de ayuda" class="w-12 sm:w-14 h-auto object-contain drop-shadow-2xl rotate-[-10deg]">
+                    </div>
+
+                    <!-- Botella animada con balanceo suave y brillo -->
+                    <div id="m8-bottle" class="flex flex-col items-center cursor-pointer my-1 transition-transform duration-700">
+                        <div class="relative flex items-center justify-center">
+                            <img src="/images/juego 8 botella.png" alt="Botella de plástico" class="w-20 sm:w-28 h-auto object-contain drop-shadow-2xl animate-bottle-sway">
+                            <div class="pointer-events-none absolute inset-0 bg-white/20 rounded-full blur-md animate-pulse"></div>
+                        </div>
+                        <span class="text-[11px] font-black text-white bg-slate-800/90 px-3 py-0.5 rounded-full shadow-xs mt-1">Botella de plástico</span>
+                    </div>
+
+                    <!-- 4 Tarjetas de tachos organizadas en cuadrícula -->
+                    <div class="w-full grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 my-auto">
+                        <!-- Marrón: Orgánico -->
+                        <button id="m8-bin-brown" class="group flex flex-col items-center bg-white/95 rounded-2xl p-2 border-3 border-slate-300 shadow-md active:scale-95 hover:scale-105 transition-all cursor-pointer card-tactil-kids">
+                            <div class="w-14 sm:w-18 h-16 sm:h-20 flex items-center justify-center">
+                                <img src="/images/juego 8.png" alt="Tacho Marrón" class="w-full h-full object-contain drop-shadow-sm">
+                            </div>
+                            <span class="text-xs font-black text-white bg-amber-800 px-3 py-0.5 rounded-full mt-1">Orgánico</span>
+                        </button>
+
+                        <!-- Blanco: Plástico (Correcto) -->
+                        <button id="m8-bin-white" class="group flex flex-col items-center bg-white/95 rounded-2xl p-2 border-3 border-slate-300 shadow-md active:scale-95 hover:scale-105 transition-all cursor-pointer card-tactil-kids">
+                            <div class="w-14 sm:w-18 h-16 sm:h-20 flex items-center justify-center">
+                                <img id="m8-white-img" src="/images/juego 8 tacho.png" alt="Tacho Blanco" class="w-full h-full object-contain drop-shadow-sm">
+                            </div>
+                            <span class="text-xs font-black text-white bg-emerald-600 px-3 py-0.5 rounded-full mt-1">Plástico ♻️</span>
+                        </button>
+
+                        <!-- Azul: Papel -->
+                        <button id="m8-bin-blue" class="group flex flex-col items-center bg-white/95 rounded-2xl p-2 border-3 border-slate-300 shadow-md active:scale-95 hover:scale-105 transition-all cursor-pointer card-tactil-kids">
+                            <div class="w-14 sm:w-18 h-16 sm:h-20 flex items-center justify-center">
+                                <img src="/images/juego 8 tacho azul.png" alt="Tacho Azul" class="w-full h-full object-contain drop-shadow-sm">
+                            </div>
+                            <span class="text-xs font-black text-white bg-blue-600 px-3 py-0.5 rounded-full mt-1">Papel</span>
+                        </button>
+
+                        <!-- Negro: General -->
+                        <button id="m8-bin-black" class="group flex flex-col items-center bg-white/95 rounded-2xl p-2 border-3 border-slate-300 shadow-md active:scale-95 hover:scale-105 transition-all cursor-pointer card-tactil-kids">
+                            <div class="w-14 sm:w-18 h-16 sm:h-20 flex items-center justify-center">
+                                <img src="/images/${encodeURIComponent('juego  8 tacho negro.png')}" alt="Tacho Negro" class="w-full h-full object-contain drop-shadow-sm">
+                            </div>
+                            <span class="text-xs font-black text-white bg-slate-800 px-3 py-0.5 rounded-full mt-1">General</span>
+                        </button>
+                    </div>
+
+                    <!-- Destellos de celebración -->
+                    <img id="m8-sparkles" src="/images/juego 1 destellos.png" alt="Destellos" class="pointer-events-none absolute inset-0 m-auto w-48 sm:w-64 h-auto object-contain opacity-0 z-30">
+                </div>
+            `;
+
+            const container = document.getElementById('m8-container')!;
+            const bottleEl = document.getElementById('m8-bottle')!;
+            const btnWhite = document.getElementById('m8-bin-white')!;
+            const btnBrown = document.getElementById('m8-bin-brown')!;
+            const btnBlue = document.getElementById('m8-bin-blue')!;
+            const btnBlack = document.getElementById('m8-bin-black')!;
+            const pointer = document.getElementById('m8-pointer')!;
+            const sparkles = document.getElementById('m8-sparkles')!;
+
+            let isWon = false;
+            let hasInteracted = false;
+            let m8IdleTimer: any = null;
+            let m8HandTimeout: any = null;
+
+            const stopHandPointer = () => {
+                if (m8HandTimeout) { clearTimeout(m8HandTimeout); m8HandTimeout = null; }
+                if (pointer) pointer.style.opacity = '0';
+            };
+
+            const resetIdleTimer = () => {
+                if (m8IdleTimer) clearTimeout(m8IdleTimer);
+                if (!isWon) {
+                    m8IdleTimer = setTimeout(() => { runPointerDemo(); }, 7000);
+                }
+            };
+
+            const runPointerDemo = () => {
+                if (isWon || !pointer || !container) return;
+                stopHandPointer();
+
+                const cRect = container.getBoundingClientRect();
+                const buttons = [btnBrown, btnWhite, btnBlue, btnBlack];
+                let idx = 0;
+
+                const moveToNext = () => {
+                    if (isWon || idx >= buttons.length) {
+                        pointer.style.opacity = '0';
+                        resetIdleTimer();
+                        return;
+                    }
+
+                    const r = buttons[idx].getBoundingClientRect();
+                    const x = (r.left + r.width * 0.5) - cRect.left;
+                    const y = (r.top + r.height * 0.5) - cRect.top;
+
+                    pointer.style.transition = 'left 0.8s ease, top 0.8s ease, opacity 0.3s ease';
+                    pointer.style.left = `${x}px`;
+                    pointer.style.top = `${y}px`;
+                    pointer.style.opacity = '1';
+
+                    idx++;
+                    m8HandTimeout = setTimeout(moveToNext, 1000);
+                };
+
+                pointer.style.transition = 'none';
+                pointer.style.opacity = '0';
+                m8HandTimeout = setTimeout(moveToNext, 300);
+            };
+
+            addMissionTimeout(() => {
+                if (!hasInteracted && !isWon) runPointerDemo();
+            }, 800);
+
+            // Respuesta correcta: Tacho Blanco (Plástico)
+            btnWhite.addEventListener('click', () => {
+                if (isWon) return;
+                isWon = true;
+                hasInteracted = true;
+                stopHandPointer();
+
+                btnWhite.classList.add('scale-105', 'ring-4', 'ring-emerald-400', 'border-emerald-400', 'shadow-[0_0_25px_rgba(16,185,129,0.8)]');
+
+                // La botella se desplaza suavemente hacia el tacho blanco
+                const botRect = bottleEl.getBoundingClientRect();
+                const binRect = btnWhite.getBoundingClientRect();
+                const deltaX = (binRect.left + binRect.width * 0.5) - (botRect.left + botRect.width * 0.5);
+                const deltaY = (binRect.top + binRect.height * 0.3) - (botRect.top + botRect.height * 0.5);
+
+                bottleEl.style.transition = 'transform 0.7s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.6s ease';
+                bottleEl.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(0.25) rotate(30deg)`;
+                bottleEl.style.opacity = '0';
+
+                addMissionTimeout(() => {
+                    btnWhite.classList.add('animate-bin-jump');
+                    if (sparkles) sparkles.classList.add('animate-sparkle-burst');
+
+                    addMissionTimeout(() => {
+                        celebrateMission(MISSIONS[7].successMessage);
+                    }, 800);
+                }, 700);
+            });
+
+            // Respuesta incorrecta suave
+            const handleWrongBin = (btn: HTMLElement) => {
+                if (isWon) return;
+                hasInteracted = true;
+                stopHandPointer();
+
+                btn.classList.add('animate-gentle-shake', 'ring-4', 'ring-amber-400', 'border-amber-400');
+                addMissionTimeout(() => {
+                    btn.classList.remove('animate-gentle-shake', 'ring-4', 'ring-amber-400', 'border-amber-400');
+                    resetIdleTimer();
+                }, 450);
+            };
+
+            btnBrown.addEventListener('click', () => handleWrongBin(btnBrown));
+            btnBlue.addEventListener('click', () => handleWrongBin(btnBlue));
+            btnBlack.addEventListener('click', () => handleWrongBin(btnBlack));
         }
 
         // --- RESULTS LOGIC ---
@@ -518,7 +2349,7 @@ Sube la foto indicada.`;
             goToScreen('game', 'results');
             document.getElementById('app-bg')!.style.backgroundImage = "url('/images/fondo.png')";
             
-            document.getElementById('result-score')!.innerText = `${state.score}/${QUESTIONS.length}`;
+            document.getElementById('result-score')!.innerText = `${state.score}/${MISSIONS.length}`;
 
             const playerBadge = document.getElementById('result-player-name');
             if (playerBadge) playerBadge.innerText = state.playerName;
@@ -528,14 +2359,14 @@ Sube la foto indicada.`;
             const msgEl = document.getElementById('result-msg')!;
             const resultBox = document.getElementById('result-score')!;
 
-            if (state.score === QUESTIONS.length) {
+            if (state.score === MISSIONS.length) {
                 mascotEl.src = "/images/celebra.png";
                 titleEl.innerText = "¡ECO HÉROE! 🏆";
                 titleEl.className = "text-base sm:text-lg font-black mb-1.5 text-emerald-600";
                 resultBox.className = "text-2xl sm:text-3xl font-black text-emerald-600";
                 msgEl.innerText = `¡Felicidades, ${state.playerName}! Puntuación perfecta. ¡Lo hiciste genial!`;
                 fireConfetti();
-            } else if (state.score >= QUESTIONS.length - 1) {
+            } else if (state.score >= MISSIONS.length - 1) {
                 mascotEl.src = "/images/celebra.png";
                 titleEl.innerText = "¡MUY BIEN, ECO-EXPLORADOR! 🏅";
                 titleEl.className = "text-base sm:text-lg font-black mb-1.5 text-blue-600";
@@ -551,7 +2382,7 @@ Sube la foto indicada.`;
             }
 
             // Enlace directo de WhatsApp con nombre y puntaje
-            const waMsg = encodeURIComponent(`¡Hola! Soy ${state.playerName}, completé el desafío Misión Eco-Exploradores con un puntaje de ${state.score}/${QUESTIONS.length} y reclamo mi insignia de Eco-Explorador 🏅🌿`);
+            const waMsg = encodeURIComponent(`¡Hola! Soy ${state.playerName}, completé el desafío Misión Eco-Exploradores con un puntaje de ${state.score}/${MISSIONS.length} y reclamo mi insignia de Eco-Explorador 🏅🌿`);
             const waBtn = document.getElementById('btn-whatsapp') as HTMLAnchorElement;
             if (waBtn) waBtn.href = `https://wa.me/51913346476?text=${waMsg}`;
         }
@@ -582,6 +2413,11 @@ Sube la foto indicada.`;
 
             if (errorEl) errorEl.classList.add('hidden');
             state.playerName = name;
+            startIntroAudio?.pause();
+            if (uploadGuideAudio) {
+                uploadGuideAudio.currentTime = 0;
+                uploadGuideAudio.play().catch(() => {});
+            }
             goToScreen('start', 'upload');
         });
 
@@ -669,6 +2505,8 @@ Sube la foto indicada.`;
         });
 
         document.getElementById('btn-start-game')?.addEventListener('click', () => {
+            uploadGuideAudio?.pause();
+            if (uploadGuideAudio) uploadGuideAudio.currentTime = 0;
             startGame();
         });
 
