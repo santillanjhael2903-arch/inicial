@@ -416,6 +416,15 @@ Sube la foto indicada.`;
         const uploadGuideAudio = document.getElementById('upload-guide-audio') as HTMLAudioElement | null;
         startIntroAudio?.play().catch(() => {});
 
+        let presentationFinished = false;
+        startIntroAudio?.addEventListener('ended', () => { presentationFinished = true; });
+        const tryStartPresentation = () => {
+            if (!startIntroAudio || presentationFinished || !startIntroAudio.paused) return;
+            startIntroAudio.play().catch(() => {});
+        };
+        document.getElementById('screen-start')?.addEventListener('pointerdown', tryStartPresentation, { once: true });
+        document.getElementById('screen-start')?.addEventListener('keydown', tryStartPresentation, { once: true });
+
         audioEl?.addEventListener('ended', () => {
             audioIcon?.classList.remove('fa-volume-slash', 'animate-pulse');
             audioIcon?.classList.add('fa-volume-high');
@@ -2399,7 +2408,7 @@ Sube la foto indicada.`;
         }
 
         // --- EVENT LISTENERS ---
-        document.getElementById('btn-start')?.addEventListener('click', () => {
+        document.getElementById('btn-start')?.addEventListener('click', async () => {
             const input = document.getElementById('player-name') as HTMLInputElement;
             const name = input?.value.trim();
             const errorEl = document.getElementById('name-error');
@@ -2413,6 +2422,17 @@ Sube la foto indicada.`;
 
             if (errorEl) errorEl.classList.add('hidden');
             state.playerName = name;
+            if (startIntroAudio && !presentationFinished) {
+                try {
+                    if (startIntroAudio.paused) await startIntroAudio.play();
+                    await new Promise<void>((resolve) => {
+                        if (presentationFinished) return resolve();
+                        startIntroAudio.addEventListener('ended', () => resolve(), { once: true });
+                    });
+                } catch {
+                    // Si el navegador no permite reproducir el audio, deja continuar el flujo.
+                }
+            }
             startIntroAudio?.pause();
             if (uploadGuideAudio) {
                 uploadGuideAudio.currentTime = 0;
