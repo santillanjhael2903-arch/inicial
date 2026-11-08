@@ -2408,7 +2408,7 @@ Sube la foto indicada.`;
         }
 
         // --- EVENT LISTENERS ---
-        document.getElementById('btn-start')?.addEventListener('click', async () => {
+        document.getElementById('btn-start')?.addEventListener('click', () => {
             const input = document.getElementById('player-name') as HTMLInputElement;
             const name = input?.value.trim();
             const errorEl = document.getElementById('name-error');
@@ -2422,17 +2422,6 @@ Sube la foto indicada.`;
 
             if (errorEl) errorEl.classList.add('hidden');
             state.playerName = name;
-            if (startIntroAudio && !presentationFinished) {
-                try {
-                    if (startIntroAudio.paused) await startIntroAudio.play();
-                    await new Promise<void>((resolve) => {
-                        if (presentationFinished) return resolve();
-                        startIntroAudio.addEventListener('ended', () => resolve(), { once: true });
-                    });
-                } catch {
-                    // Si el navegador no permite reproducir el audio, deja continuar el flujo.
-                }
-            }
             startIntroAudio?.pause();
             if (uploadGuideAudio) {
                 uploadGuideAudio.currentTime = 0;
